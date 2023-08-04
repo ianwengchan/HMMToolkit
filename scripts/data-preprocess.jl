@@ -55,17 +55,17 @@ df.DateTime = DateTime.(SubString.(df.DateTime, 1, 19), DateFormat("yyyy-mm-dd H
 
 df = enum_trips_and_find_start(df)
 
-df.radian = [missing; find_angle(df.Latitude[1:end-1], df.Longitude[1:end-1], df.Latitude[2:end], df.Longitude[2:end])]
-df.radian = ifelse.(df.start .== 1, missing, df.radian)
-df.delta_radian = [missing; angle_change("radian", df.radian[1:end-1], df.radian[2:end])]
-
 df.timesince = combine(groupby(df, :ID), :DateTime => (x -> Dates.value.(convert.(Dates.Second, x .- minimum(x)))) => :timesince).timesince
 
 df.timeinterval = [0; df.timesince[2:end] .- df.timesince[1:end-1]]
 df.timeinterval = ifelse.(df.start .== 1, missing, df.timeinterval)
+df = filter(row -> row.start .== 1 || row.timeinterval .> 0, df)    # remove rows with 0 timeinterval first to ensure correct calculation of changes
+
+df.radian = [missing; find_angle(df.Latitude[1:end-1], df.Longitude[1:end-1], df.Latitude[2:end], df.Longitude[2:end])]
+df.radian = ifelse.(df.start .== 1, missing, df.radian)
+df.delta_radian = [missing; angle_change("radian", df.radian[1:end-1], df.radian[2:end])]
 
 df.acceleration = [0; (df.Speed[2:end] - df.Speed[1:end-1]) ./ df.timeinterval[2:end]]
-
 
 filter_table = combine(groupby(df, :ID), 
                         nrow => :num_obs,
@@ -79,4 +79,3 @@ id_filter = filter_table[filter_table.trip_length .>= 180 .& filter_table.num_ob
 
 # Filter the original data
 df_longer = filter(row -> row.ID in id_filter, df)
-df_longer = filter(row -> row.start .== 1 || row.timeinterval .> 0, df_longer)
