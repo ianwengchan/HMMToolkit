@@ -18,7 +18,7 @@ end
 function angle_change(unit, angle1, angle2) # tested
     if unit == "degree"
         change = angle2 .- angle1
-        temp2 = temp1 .- 360
+        temp2 = change .- 360
         for i in eachindex(change)
             x = change[i]
             y = temp2[i]
