@@ -1,7 +1,7 @@
 using DrWatson
 @quickactivate "FitHMM-jl"
 
-using CSV, DataFrames, Dates
+using CSV, DataFrames, Dates, ShiftedArrays
 
 function find_angle(lat1, long1, lat2, long2)   # tested
     lat1_r = lat1 .* pi ./ 180
@@ -40,7 +40,7 @@ function angle_change(unit, angle1, angle2) # tested
 end
 
 function enum_trips_and_find_start(dataframe)   # tested
-    dataframe = sort!(dataframe, [:DateTime])
+    sort!(dataframe, [:DateTime])
     TripId_list = DataFrame(TripId = unique(dataframe.TripId), ID = 1:length(unique(dataframe.TripId)))
     dataframe = innerjoin(dataframe, TripId_list, on = :TripId)
     dataframe.start = [1; dataframe.ID[2:end] - dataframe.ID[1:(end-1)]]
@@ -49,23 +49,22 @@ end
 
 
 df = CSV.read(datadir("sample-data.csv"), DataFrame)
-first(df, 10)
-
 df.DateTime = DateTime.(SubString.(df.DateTime, 1, 19), DateFormat("yyyy-mm-dd HH:MM:SS"))
 
 df = enum_trips_and_find_start(df)
 
-df.timesince = combine(groupby(df, :ID), :DateTime => (x -> Dates.value.(convert.(Dates.Second, x .- minimum(x)))) => :timesince).timesince
+group_df = groupby(df, :ID)
 
-df.timeinterval = [0; df.timesince[2:end] .- df.timesince[1:end-1]]
+transform!(group_df, :DateTime => (x -> Dates.value.(convert.(Dates.Second, x .- minimum(x)))) => :timesince)
+transform!(group_df, :timesince => (x -> x - ShiftedArrays.lag(x)) => :timeinterval)
 df.timeinterval = ifelse.(df.start .== 1, missing, df.timeinterval)
-df = filter(row -> row.start .== 1 || row.timeinterval .> 0, df)    # remove rows with 0 timeinterval first to ensure correct calculation of changes
+filter!(row -> row.start .== 1 || row.timeinterval .> 0, df)    # remove rows with 0 timeinterval first to ensure correct calculation of changes
 
-df.radian = [missing; find_angle(df.Latitude[1:end-1], df.Longitude[1:end-1], df.Latitude[2:end], df.Longitude[2:end])]
+transform!(group_df, [:Latitude, :Longitude] => ((a,b) -> (find_angle(ShiftedArrays.lag(a), ShiftedArrays.lag(b), a, b))) => :radian)
 df.radian = ifelse.(df.start .== 1, missing, df.radian)
-df.delta_radian = [missing; angle_change("radian", df.radian[1:end-1], df.radian[2:end])]
+transform!(group_df, :radian => (x -> angle_change("radian", ShiftedArrays.lag(x), x)) => :delta_radian)
 
-df.acceleration = [0; (df.Speed[2:end] - df.Speed[1:end-1]) ./ df.timeinterval[2:end]]
+transform!(group_df, [:Speed, :timeinterval] => ((a, b) -> (a - ShiftedArrays.lag(a)) ./ b) => :acceleration)
 
 filter_table = combine(groupby(df, :ID), 
                         nrow => :num_obs,
