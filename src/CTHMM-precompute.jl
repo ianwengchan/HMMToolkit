@@ -7,14 +7,14 @@ function CTHMM_precompute_batch_data_emission_prob(df)  # works but need to adju
     num_state = 4
     # num_state = size(state_list, 1) # what is the format of state list??
 
-    obs_seq_list = Array{Any}(undef, num_time_series)
+    obs_seq_emiss_list = Array{Any}(undef, num_time_series)
     
     for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
         len_time_series = nrow(group_df[g]) - 1
 
-        obs_seq_list[g] = Array{Any}(undef, 2)
-        obs_seq_list[g][1] = zeros(Union{Float64,Missing}, len_time_series, num_state)  # data_emiss_prob_list
+        obs_seq_emiss_list[g] = Array{Any}(undef, 2)
+        obs_seq_emiss_list[g][1] = zeros(Union{Float64,Missing}, len_time_series, num_state)  # data_emiss_prob_list
     
         ## compute emission probabilities for each dimension of observations for each state
         ## assume each dimension of observations are independent conditioned on the state
@@ -24,14 +24,14 @@ function CTHMM_precompute_batch_data_emission_prob(df)  # works but need to adju
             emiss_prob = pdf.(Normal(0, (0.5*s)), skipmissing(data))    # testing with variances 0.5, 1, 1.5, 2
             # emiss_prob = mvnpdf[data, state_list[s].mu, state_list[s].var]  # assume normal at this point; change probability distributions later
             
-            obs_seq_list[g][1][:, s] = [missing; emiss_prob]
+            obs_seq_emiss_list[g][1][:, s] = [missing; emiss_prob]
         end
 
-        obs_seq_list[g][2] = log.(obs_seq_list[g][1])  # log_data_emiss_prob_list
+        obs_seq_emiss_list[g][2] = log.(obs_seq_emiss_list[g][1])  # log_data_emiss_prob_list
         
     end
 
-    return obs_seq_list
+    return obs_seq_emiss_list
 
 end
 
