@@ -55,26 +55,27 @@ df = enum_trips_and_find_start(df)
 
 group_df = groupby(df, :ID)
 
-transform!(group_df, :DateTime => (x -> Dates.value.(convert.(Dates.Second, x .- minimum(x)))) => :timesince)
-transform!(group_df, :timesince => (x -> x - ShiftedArrays.lag(x)) => :timeinterval)
-df.timeinterval = ifelse.(df.start .== 1, missing, df.timeinterval)
-filter!(row -> row.start .== 1 || row.timeinterval .> 0, df)    # remove rows with 0 timeinterval first to ensure correct calculation of changes
+transform!(group_df, :DateTime => (x -> Dates.value.(convert.(Dates.Second, x .- minimum(x)))) => :time_since)
+transform!(group_df, :time_since => (x -> x - ShiftedArrays.lag(x)) => :time_interval)
+df.time_interval = ifelse.(df.start .== 1, missing, df.time_interval)
+filter!(row -> row.start .== 1 || row.time_interval .> 0, df)    # remove rows with 0 timeinterval first to ensure correct calculation of changes
+group_df = groupby(df, :ID)
 
 transform!(group_df, [:Latitude, :Longitude] => ((a,b) -> (find_angle(ShiftedArrays.lag(a), ShiftedArrays.lag(b), a, b))) => :radian)
 df.radian = ifelse.(df.start .== 1, missing, df.radian)
 transform!(group_df, :radian => (x -> angle_change("radian", ShiftedArrays.lag(x), x)) => :delta_radian)
 
-transform!(group_df, [:Speed, :timeinterval] => ((a, b) -> (a - ShiftedArrays.lag(a)) ./ b) => :acceleration)
+transform!(group_df, [:Speed, :time_interval] => ((a, b) -> (a - ShiftedArrays.lag(a)) ./ b) => :acceleration)
 
 filter_table = combine(groupby(df, :ID), 
                         nrow => :num_obs,
-                        :timesince => maximum => :trip_length,
-                        :timeinterval => (x -> minimum(skipmissing(x))) => :min_timeinterval,
-                        :timeinterval => (x -> maximum(skipmissing(x))) => :max_timeinterval)
+                        :time_since => maximum => :trip_length,
+                        :time_interval => (x -> minimum(skipmissing(x))) => :min_time_interval,
+                        :time_interval => (x -> maximum(skipmissing(x))) => :max_time_interval)
 
 # Consider trip length at least 180 sec (3 min)
 # Consider num observations at least 30 for more meaningful evolution
-id_filter = filter_table[filter_table.trip_length .>= 180 .& filter_table.num_obs .>= 30, :ID]
+id_filter = filter_table[filter_table.trip_length .>= 180 .&& filter_table.num_obs .>= 30, :ID]
 
 # Filter the original data
 df_longer = filter(row -> row.ID in id_filter, df)
