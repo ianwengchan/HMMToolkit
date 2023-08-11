@@ -1,15 +1,15 @@
 # input
-num_state = size(Q_mat, 1)
-distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
-distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
+# num_state = size(Q_mat, 1)
+# distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
+# distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
 
-function CTHMM_decode_outer_forward_backward(seq_df, data_emiss_prob_list, Q_mat)
+function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat)
 
     # decoding for only one time-series
     # even if i do decoding for all time-series (having the same covariates)
     # i only have to compute the distinct_time_list and distinct_time_Pt_list for once
 
-    ## compute alpha()
+    num_state = size(Q_mat, 1)
     len_time_series = nrow(seq_df)
     time_interval_list = collect(skipmissing(seq_df.time_interval))   # already feed-in the time intervals
 
@@ -20,7 +20,7 @@ function CTHMM_decode_outer_forward_backward(seq_df, data_emiss_prob_list, Q_mat
     ## obs_seq_emiss_list[g][1] # data_emiss_prob_list
     ## obs_seq_emiss_list[g][2] # log_data_emiss_prob_list
 
-    num_state = size(Q_mat, 1)
+    ## compute alpha()
     ALPHA = zeros(len_time_series, num_state)
     C = zeros(len_time_series, 1) # rescaling factor
 
