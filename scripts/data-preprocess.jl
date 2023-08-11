@@ -1,7 +1,7 @@
 using DrWatson
 @quickactivate "FitHMM-jl"
 
-using CSV, DataFrames, Dates, ShiftedArrays
+using CSV, DataFrames, Dates, ShiftedArrays, JLD2
 
 function find_angle(lat1, long1, lat2, long2)   # tested
     lat1_r = lat1 .* pi ./ 180
@@ -18,23 +18,11 @@ end
 function angle_change(unit, angle1, angle2) # tested
     if unit == "degree"
         change = angle2 .- angle1
-        temp2 = change .- 360
-        for i in eachindex(change)
-            x = change[i]
-            y = temp2[i]
-            if !ismissing(x)    # not missing
-                change[i] = ifelse(abs(x) <= abs(y), x, y)
-                change[i] = ifelse(change[i] <= 180, change[i] + 360, change[i])
-            end
-        end
+        change = map(passmissing(x -> ifelse(abs(x) <= abs(x-360), x, x-360)), change)
+        change = map(passmissing(x -> ifelse(x <= 180, x + 360, x)), change)
     else # unit == "radian"
         change = angle2 .- angle1
-        for i in eachindex(change)
-            x = change[i]
-            if !ismissing(x)    # not missing
-                change[i] = ifelse(x <= -pi, x + 2*pi, ifelse(x .>= pi, x .- 2*pi, x))
-            end
-        end
+        change = map(passmissing(x -> ifelse(x <= -pi, x + 2*pi, ifelse(x >= pi, x - 2*pi, x))), change)
     end
     return change
 end
@@ -79,3 +67,5 @@ id_filter = filter_table[filter_table.trip_length .>= 180 .&& filter_table.num_o
 
 # Filter the original data
 df_longer = filter(row -> row.ID in id_filter, df)
+
+jldsave(datadir("df_longer.jld2"); df_longer = df_longer)
