@@ -1,14 +1,15 @@
-function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Ctij, taui_list, Nij_mat)
+function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
 
     num_state = size(Q_mat, 1)
     num_distinct_time = size(distinct_time_list, 1)
+
+    taui_list = zeros(num_state, 1)
+    Nij_mat = zeros(num_state, num_state)
     
     ## construct A matrix
     A = zeros(num_state * 2, num_state * 2)
     A[1:num_state, 1:num_state] = Q_mat
     A[(num_state+1):end, (num_state+1):end] = Q_mat
-    ### OK
-
 
     ## for each state; compute tau_i
     for i = 1:num_state
@@ -20,16 +21,11 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
 
             T = distinct_time_list[t_idx]   # t_delta
 
-            expm_A = expm(A * T)[1:num_state, (num_state+1):end]
+            expm_A = exp(A * T)[1:num_state, (num_state+1):end]
 
             Ri = 0.0
-            for k = 1:num_state # k,l are pairs of i,j; assume reachability
-                for l = 1:num_state
-                    if (distinct_time_Pt_list[t_idx][k,l] != 0) # check if denominator is nonzero
-                        Ri = Ri + Ctij[t_idx, k, l] * expm_A[k, l] / distinct_time_Pt_list[t_idx][k, l]  
-                    end
-                end
-            end
+            temp = Etij[t_idx, :, :] .* expm_A ./ distinct_time_Pt_list[t_idx]  # check if denominator is nonzero
+            Ri = Ri + sum(filter(x -> x != Inf, temp))
 
             # tau_i
             taui_list[i] = taui_list[i] + Ri    # storing 1 tau_i for each i from all delta
@@ -60,16 +56,11 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                     
                     T = distinct_time_list[t_idx]   # t_delta
 
-                    expm_A = expm(A * T)[1:num_state, (num_state+1):end]
+                    expm_A = exp(A * T)[1:num_state, (num_state+1):end]
                                     
                     temp_sum = 0.0
-                    for k = 1:num_state
-                        for l = 1:num_state                            
-                            if (distinct_time_Pt_list[t_idx][k, l] != 0)                        
-                                temp_sum = temp_sum + Ctij[t_idx, k, l] * expm_A[k, l] / distinct_time_Pt_list[t_idx][k, l] 
-                            end
-                        end
-                    end
+                    temp = Etij[t_idx, :, :] .* expm_A ./ distinct_time_Pt_list[t_idx]
+                    temp_sum = temp_sum + sum(filter(x -> x != Inf, temp))
     
                     nij = temp_sum * Q_mat[i, j]
     
@@ -83,4 +74,6 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
             end
         end
     end
+
+    return Nij_mat, taui_list
 end
