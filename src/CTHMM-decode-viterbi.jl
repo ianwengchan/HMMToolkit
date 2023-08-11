@@ -1,4 +1,4 @@
-function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat)
+function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_init_prob_list)
 
     num_state = size(Q_mat, 1)
     len_time_series = nrow(seq_df)

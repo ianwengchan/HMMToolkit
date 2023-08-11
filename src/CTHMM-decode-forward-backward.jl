@@ -3,7 +3,7 @@
 # distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
 # distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
 
-function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat)
+function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
 
     # decoding for only one time-series
     # even if i do decoding for all time-series (having the same covariates)
