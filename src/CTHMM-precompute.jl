@@ -11,20 +11,23 @@ function CTHMM_precompute_batch_data_emission_prob(df)  # works but need to adju
     
     for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
-        len_time_series = nrow(group_df[g]) - 1
+        len_time_series = nrow(group_df[g])
+        # observations can be missing, e.g. speed is available starting 1st timepoint
+        # acceleration and radian are available starting 2nd timepoint
+        # but change in radian is avilable only starting 3rd timepoint
 
         obs_seq_emiss_list[g] = Array{Any}(undef, 2)
-        obs_seq_emiss_list[g][1] = zeros(Union{Float64,Missing}, len_time_series, num_state)  # data_emiss_prob_list
+        obs_seq_emiss_list[g][1] = zeros(len_time_series, num_state)  # data_emiss_prob_list
     
         ## compute emission probabilities for each dimension of observations for each state
         ## assume each dimension of observations are independent conditioned on the state
         data = group_df[g].delta_radian # just as an example
 
         for s = 1:num_state
-            emiss_prob = pdf.(Normal(0, (0.5*s)), skipmissing(data))    # testing with variances 0.5, 1, 1.5, 2
+            obs_seq_emiss_list[g][1][:, s] = map(x -> ismissing(x) ? 1 : pdf.(Normal(0, 0.5*s), x), data)
+            # assume emission probability of missing data = 1
+            # testing with variances 0.5, 1, 1.5, 2
             # emiss_prob = mvnpdf[data, state_list[s].mu, state_list[s].var]  # assume normal at this point; change probability distributions later
-            
-            obs_seq_emiss_list[g][1][:, s] = [missing; emiss_prob]
         end
 
         obs_seq_emiss_list[g][2] = log.(obs_seq_emiss_list[g][1])  # log_data_emiss_prob_list

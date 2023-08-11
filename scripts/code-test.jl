@@ -5,7 +5,8 @@ using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Printf, Distributions
 
 # CTHMM-precompute-distinct-time.jl - tested
 # CTHMM-precompute.jl - partially tested
-# CTHMM-decode-forward-backward.jl - working
+# CTHMM-decode-forward-backward.jl - Evij calculation tested
+# CTHMM-decode-viterbi.jl
 # CTHMM-learn-batch-outer-decoding.jl
 # have to check calculation of Ctij (or Etij) first
 
@@ -39,27 +40,6 @@ obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df_longer)
 g = 1
 seq_df = group_df[g]
 data_emiss_prob_list = obs_seq_emiss_list[g][1]
-len_time_series = nrow(seq_df) - 1
-time_interval_list = collect(skipmissing(seq_df.time_interval))
 
-num_state = size(Q_mat, 1)
-ALPHA = zeros(Union{Float64,Missing}, len_time_series, num_state)
-C = zeros(Union{Float64,Missing}, num_state, 1)
+Evij, log_prob = CTHMM_decode_outer_forward_backward(seq_df, data_emiss_prob_list, Q_mat)
 
-Pt_list = Array{Any}(undef, len_time_series)
-for v = 1:len_time_series
-        T = time_interval_list[v]
-        t_idx = findfirst(x -> x .== T, distinct_time_list)
-        Pt_list[v] = Array{Any}(undef, num_state, num_state)
-        Pt_list[v] = distinct_time_Pt_list[t_idx]
-end
-
-ALPHA[1, :] = state_init_prob_list .* data_emiss_prob_list[1, :]
-C[1] = 1.0 / sum(ALPHA[1, :])
-ALPHA[1, :] = ALPHA[1, :] .* C[1]
-
-v = 2
-
-s = 1
-
-ALPHA[v-1, :] .* Pt_list[v-1][:, s]
