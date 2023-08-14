@@ -9,13 +9,14 @@ using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2
 # CTHMM-decode-viterbi.jl - tested
 # CTHMM-batch-decode.jl - tested
 # CTHMM-learn-nij-taui.jl - tested
-
+# CTHMM-learn-Q.jl - tested
 
 include(srcdir("CTHMM-precompute-distinct-time.jl"))
 include(srcdir("CTHMM-precompute.jl"))
 include(srcdir("CTHMM-decode-forward-backward.jl"))
 include(srcdir("CTHMM-decode-viterbi.jl"))
 include(srcdir("CTHMM-batch-decode.jl"))
+include(srcdir("CTHMM-learn-nij-taui.jl"))
 
 df_longer = load(datadir("df_longer.jld2"), "df_longer")
 
@@ -55,7 +56,7 @@ log_data_emiss_prob_list = obs_seq_emiss_list[g][2]
 # log_prob from soft decoding is better than that from hard decoding
 Evij, log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
 # OK
-best_state_seq, best_log_prob = CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat)
+best_state_seq, best_log_prob = CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_init_prob_list)
 # OK
 
 
@@ -68,3 +69,6 @@ Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_l
 
 Nij_mat
 taui_list
+
+Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
+
