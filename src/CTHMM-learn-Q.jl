@@ -9,12 +9,12 @@ function CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
         Q_mat[i, i] = -(sum(temp) - temp[i])    # sum the qij terms
     end
 
-    ## output some statistics
-    min_qii = minimum(Q_mat)    # qii <= 0
-    max_qij = maximum(Q_mat)    # qij >= 0
+    # ## output some statistics
+    # min_qii = minimum(Q_mat)    # qii <= 0
+    # max_qij = maximum(Q_mat)    # qij >= 0
 
-    println("min_qii = ", min_qii)
-    println("max_qij = ", max_qij)
+    # println("min qii = ", min_qii)
+    # println("max qij = ", max_qij)
 
     return Q_mat
 

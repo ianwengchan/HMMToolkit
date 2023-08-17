@@ -30,7 +30,10 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, Q_mat, state_init
         ## compute forward backward algorithm, remember Et[i,j] parameter: prob at the end-states at time t
         if (soft_decode == 1) # soft decoding
             data_emiss_prob_list = obs_seq_emiss_list[g][1]
-            Evij, subject_log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
+            Svi, Evij, subject_log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
+            for i in 1:num_state
+                seq_df[:, string("Sv", i)] = Svi[:, i]
+            end
         else()
             log_data_emiss_prob_list = obs_seq_emiss_list[g][2]
             state_seq, subject_log_prob = CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_init_prob_list)

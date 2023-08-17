@@ -68,8 +68,10 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, stat
         BETA[v, :] = BETA[v, :] .* C[v]
     end # v
 
+    ## compute Svi, smoother
+    Svi = ALPHA .* BETA ./ C
 
-    ## compute Evij
+    ## compute Evij, two-slice marginal
     Evij = zeros((len_time_series-1), num_state, num_state)
 
     for v = 1:(len_time_series-1)
@@ -86,6 +88,6 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, stat
     log_prob = 0
     log_prob = log_prob - sum(log.(C))
 
-    return Evij, log_prob   # Pt_list?
+    return Svi, Evij, log_prob   # Pt_list?
     
 end
