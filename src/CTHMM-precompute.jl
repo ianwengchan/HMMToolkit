@@ -5,6 +5,7 @@ function CTHMM_precompute_batch_data_emission_prob(df, state_list)  # works but 
     
     num_time_series = size(group_df, 1)
     num_state = size(state_list, 2) # follow the expert distribution list format of LRMoE
+    num_dim = size(state_list, 1)
 
     obs_seq_emiss_list = Array{Any}(undef, num_time_series)
     
@@ -20,10 +21,15 @@ function CTHMM_precompute_batch_data_emission_prob(df, state_list)  # works but 
     
         ## compute emission probabilities for each dimension of observations for each state
         ## assume each dimension of observations are independent conditioned on the state
-        data = group_df[g].delta_radian # just as an example
+        data = [transpose(group_df[g].delta_radian);
+                transpose(group_df[g].acceleration)] # just as an example
 
         for s = 1:num_state
-            obs_seq_emiss_list[g][1][:, s] = map(x -> ismissing(x) ? 1 : Distributions.pdf.(Distributions.Normal(0, 0.5*s), x), data)
+            temp = 1.0
+            for d = 1:num_dim
+                temp = temp .* map(x -> ismissing(x) ? 1 : CTHMM.pdf.(state_list[d, s], x), data[d, :])
+            end
+            obs_seq_emiss_list[g][1][:, s] = temp
             
             # assume emission probability of missing data = 1
             # testing with variances 0.5, 1, 1.5, 2
