@@ -47,7 +47,7 @@ end
 cdf(d::NormalExpert, x...) = Distributions.cdf.(Distributions.Normal(d.μ, d.σ), x...)
 
 ## expert_ll, etc
-expert_ll_exact(d::NormalExpert, x::Real) = LRMoE.logpdf(d, x)
+expert_ll_exact(d::NormalExpert, x::Real) = CTHMM.logpdf(d, x)
 function expert_ll(d::NormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
