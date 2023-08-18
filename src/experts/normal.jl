@@ -240,13 +240,15 @@ function EM_M_expert_exact(d::NormalExpert,
 
     # Update parameters
     # pos_idx = (ye .!= 0.0)
-    term_zkz = z_e_obs
-    term_zkz_Y = (z_e_obs .* Y_e_obs)
-    term_zkz_Y_sq = (z_e_obs .* Y_sq_e_obs)
+    ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
+    z_e_obs = [ismissing(x) ? missing : y for (x, y) in zip(ye, z_e_obs)]
+    term_zkz = collect(skipmissing(z_e_obs))
+    term_zkz_Y = collect(skipmissing(z_e_obs .* Y_e_obs))
+    term_zkz_Y_sq = collect(skipmissing(z_e_obs .* Y_sq_e_obs))    
 
-    μ_new = sum(skipmissing(term_zkz_Y))[1] / sum(skipmissing(term_zkz))[1]  # may have missing observations
+    μ_new = sum(term_zkz_Y)[1] / sum(term_zkz)[1]
 
-    demominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(skipmissing(term_zkz))[1]
+    demominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]
     numerator = if penalty
         (
             sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
@@ -254,8 +256,8 @@ function EM_M_expert_exact(d::NormalExpert,
         )
     else
         (
-            sum(skipmissing(term_zkz_Y_sq))[1] - 2.0 * μ_new * sum(skipmissing(term_zkz_Y))[1] +
-                (μ_new)^2 * sum(skipmissing(term_zkz))[1]
+            sum(term_zkz_Y_sq)[1] - 2.0 * μ_new * sum(term_zkz_Y)[1] +
+                (μ_new)^2 * sum(term_zkz)[1]
         )
     end
     tmp = numerator / demominator
