@@ -1,7 +1,10 @@
 using DrWatson
 @quickactivate "FitHMM-jl"
 
+include(srcdir("CTHMM.jl"))
 using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2
+# using CSV, DataFrames, Dates, JLD2
+using .CTHMM
 
 # CTHMM-precompute-distinct-time.jl - tested
 # CTHMM-precompute.jl - partially tested
@@ -18,6 +21,9 @@ include(srcdir("CTHMM-decode-viterbi.jl"))
 include(srcdir("CTHMM-batch-decode.jl"))
 include(srcdir("CTHMM-learn-nij-taui.jl"))
 include(srcdir("CTHMM-learn-Q.jl"))
+# include(srcdir("utils.jl"))
+# include(srcdir("expert.jl"))
+# include(srcdir("experts/normal.jl"))
 
 df_longer = load(datadir("df_longer.jld2"), "df_longer")
 
@@ -75,8 +81,8 @@ state_init_prob_list = [0.5; 0.25; 0.15; 0.1]
 # Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
 
-df = copy(df_longer)
-Q_mat_init = copy(Q_mat0)
+df = Base.copy(df_longer)
+Q_mat_init = Base.copy(Q_mat0)
 
 distinct_time_list = CTHMM_precompute_distinct_time_list(df.time_interval)
 num_state = size(Q_mat_init, 1)
@@ -88,7 +94,7 @@ obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df)  # with initi
 pre_all_subject_prob = -Inf
 model_iter_count = 0
 
-Q_mat = copy(Q_mat_init)
+Q_mat = Base.copy(Q_mat_init)
 
 model_iter_count = model_iter_count + 1
 
@@ -97,20 +103,10 @@ cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df, Q_mat, 
 Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
 Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
-ye = df.delta_radian
-Y_e_obs = ye
-Y_sq_e_obs = ye .^ 2
 
-z_e_obs = df.Sv1
-term_zkz = z_e_obs
-term_zkz_Y = (z_e_obs .* Y_e_obs)
-term_zkz_Y_sq = (z_e_obs .* Y_sq_e_obs)
+model_init = [CTHMM.NormalExpert(0, 0.5) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1.5);
+                CTHMM.NormalExpert(1, 0.5) CTHMM.NormalExpert(1, 1) CTHMM.NormalExpert(1, 1.5)]
 
-μ_new = sum(skipmissing(term_zkz_Y))[1] / sum(skipmissing(term_zkz))[1]
-demominator = sum(skipmissing(term_zkz))[1]
-
-numerator = sum(skipmissing(term_zkz_Y_sq))[1] - 2.0 * μ_new * sum(skipmissing(term_zkz_Y))[1] +
-                (μ_new)^2 * sum(skipmissing(term_zkz))[1]
-
-tmp = numerator / demominator
-σ_new = sqrt(maximum([0.0, tmp]))
+CTHMM.EM_M_expert_exact(CTHMM.NormalExpert(0, 0.5), df.delta_radian, df.Sv1)
+EM_M_expert_exact(df.delta_radian, df.Sv2)
+EM_M_expert_exact(df.delta_radian, df.Sv3)

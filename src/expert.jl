@@ -14,7 +14,7 @@ const DiscreteExpert{s <: ExpertSupport, z <: ZeroInflation} = AnyExpert{
     s, z, DiscreteUnivariateDistribution
 }
 const ContinuousExpert{s <: ExpertSupport, z <: ZeroInflation} = AnyExpert{
-    s,z,ContinuousUnivariateDistribution
+    s, z, ContinuousUnivariateDistribution
 }
 # Real-valued expert distributions
 const RealDiscreteExpert = DiscreteExpert{RealValued, NonZI}
@@ -39,47 +39,53 @@ Broadcast.broadcastable(d::NonZIContinuousExpert) = Ref(d)
 
 ##### specific distributions #####
 
-const add_experts = [
-    "burr",
-    "gammacount",
-]
+# const add_experts = [
+#     # "burr",
+#     # "gammacount",
+# ]
 
-const discrete_experts = [
-    "binomial", "zibinomial",
-    "gammacount", "zigammacount",
-    "negativebinomial", "zinegativebinomial",
-    "poisson", "zipoisson",
-]
+# const discrete_experts = [
+#     # "binomial", "zibinomial",
+#     # "gammacount", "zigammacount",
+#     # "negativebinomial", "zinegativebinomial",
+#     # "poisson", "zipoisson",
+# ]
 
 const continuous_experts = [
-    "burr", "ziburr",
-    "gamma", "zigamma",
-    "inversegaussian", "ziinversegaussian",
-    "lognormal", "zilognormal",
-    "weibull", "ziweibull",]
-
-const calcs = [
-    # "expert_ll_pos",
-    # "expert_tn_pos",
-    # "expert_tn_bar_pos",
-    # "expert_ll",
-    # "expert_tn",
-    # "expert_tn_bar",
-    "exposurize"
+    # "burr", "ziburr",
+    # "gamma", "zigamma",
+    # "inversegaussian", "ziinversegaussian",
+    # "lognormal", "zilognormal",
+    "normal",
+    # "weibull", "ziweibull",]
 ]
 
-for dname in add_experts
-    include(joinpath("experts", "add_dist", "$(dname).jl"))
-end
+# const calcs = [
+#     # # "expert_ll_pos",
+#     # # "expert_tn_pos",
+#     # # "expert_tn_bar_pos",
+#     # # "expert_ll",
+#     # # "expert_tn",
+#     # # "expert_tn_bar",
+#     # "exposurize"
+# ]
 
-for dname in discrete_experts
-    include(joinpath("experts", "discrete", "$(dname).jl"))
-end
+# for dname in add_experts
+#     include(joinpath("experts", "add_dist", "$(dname).jl"))
+# end
+
+# for dname in discrete_experts
+#     include(joinpath("experts", "discrete", "$(dname).jl"))
+# end
+
+# for dname in continuous_experts
+#     include(joinpath("experts", "continuous", "$(dname).jl"))
+# end
+
+# for dname in calcs
+#     include(joinpath("experts", "ll", "$(dname).jl"))
+# end
 
 for dname in continuous_experts
-    include(joinpath("experts", "continuous", "$(dname).jl"))
-end
-
-for dname in calcs
-    include(joinpath("experts", "ll", "$(dname).jl"))
+    include(joinpath("experts", "$(dname).jl"))
 end

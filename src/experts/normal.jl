@@ -11,7 +11,7 @@ f(x; \\mu, \\sigma) = \\frac{1}{\\sqrt{2 \\pi \\sigma^2}}
 See also: [Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution) (Wikipedia)
 
 """
-struct NormalExpert{T<:Real} <: NonZIContinuousExpert
+struct NormalExpert{T<:Real} <: RealContinuousExpert
     μ::T
     σ::T
     NormalExpert{T}(µ::T, σ::T) where {T<:Real} = new{T}(µ, σ)
@@ -87,23 +87,24 @@ function params_init(y, d::NormalExpert)
     return NormalExpert(μ_init, σ_init)
 end
 
-# ## KS stats for parameter initialization
-# function ks_distance(y, d::NormalExpert)
-#     p_zero = sum(y .== 0.0) / sum(y .>= 0.0)
-#     return max(
-#         abs(p_zero - 0.0),
-#         (1 - 0.0) *
-#         HypothesisTests.ksstats(y[y .> 0.0], Distributions.Normal(d.μ, d.σ))[2],
-#     )
-# end
+## KS stats for parameter initialization
+function ks_distance(y, d::NormalExpert)
+    # p_zero = sum(y .== 0.0) / sum(y .>= 0.0)
+    # return max(
+    #     abs(p_zero - 0.0),
+    #     (1 - 0.0) *
+    #     HypothesisTests.ksstats(y[y .> 0.0], Distributions.Normal(d.μ, d.σ))[2],
+    # )
+    return HypothesisTests.ksstats(y, Distributions.Normal(d.μ, d.σ))[2]
+end
 
-# ## Simululation
-# sim_expert(d::NormalExpert) = Distributions.rand(Distributions.Normal(d.μ, d.σ), 1)[1]
+## Simululation
+sim_expert(d::NormalExpert) = Distributions.rand(Distributions.Normal(d.μ, d.σ), 1)[1]
 
-# ## penalty
-# penalty_init(d::NormalExpert) = [2.0 2.0]
-# no_penalty_init(d::NormalExpert) = [1.0 1.0]
-# penalize(d::NormalExpert, p) = -0.5 * (p[1] - 1) / (d.σ * d.σ) - (p[2] - 1) * log(d.σ)
+## penalty
+penalty_init(d::NormalExpert) = [2.0 2.0]
+no_penalty_init(d::NormalExpert) = [1.0 1.0]
+penalize(d::NormalExpert, p) = -0.5 * (p[1] - 1) / (d.σ * d.σ) - (p[2] - 1) * log(d.σ)
 
 ## statistics
 mean(d::NormalExpert) = mean(Distributions.Normal(d.μ, d.σ))
@@ -229,10 +230,12 @@ quantile(d::NormalExpert, p) = quantile(Distributions.Normal(d.μ, d.σ), p)
 # end
 
 ## EM: M-Step, exact observations
-function EM_M_expert_exact(d::NormalExpert,
-    ye, exposure,
+function EM_M_expert_exact(
+    d::NormalExpert,
+    ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 1.0])
+    # penalty=true, pen_pararms_jk=[1.0 1.0])
+)
 
     # Further E-Step
     Y_e_obs = ye
@@ -248,20 +251,23 @@ function EM_M_expert_exact(d::NormalExpert,
 
     μ_new = sum(term_zkz_Y)[1] / sum(term_zkz)[1]
 
-    demominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]
-    numerator = if penalty
-        (
-            sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
-            (μ_new)^2 * sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)
-        )
-    else
-        (
-            sum(term_zkz_Y_sq)[1] - 2.0 * μ_new * sum(term_zkz_Y)[1] +
-                (μ_new)^2 * sum(term_zkz)[1]
-        )
-    end
-    tmp = numerator / demominator
+    # demominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]
+    denominator = sum(term_zkz)[1]
+    numerator = sum(term_zkz_Y_sq)[1] - 2.0 * μ_new * sum(term_zkz_Y)[1] + (μ_new)^2 * sum(term_zkz)[1]
+    # numerator = if penalty
+    #     (
+    #         sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
+    #         (μ_new)^2 * sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)
+    #     )
+    # else
+    #     (
+    #         sum(term_zkz_Y_sq)[1] - 2.0 * μ_new * sum(term_zkz_Y)[1] +
+    #             (μ_new)^2 * sum(term_zkz)[1]
+    #     )
+    # end
+    tmp = numerator / denominator
     σ_new = sqrt(maximum([0.0, tmp]))
 
     return NormalExpert(μ_new, σ_new)
+    
 end

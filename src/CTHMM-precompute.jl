@@ -1,11 +1,10 @@
-function CTHMM_precompute_batch_data_emission_prob(df)  # works but need to adjust distributions
+function CTHMM_precompute_batch_data_emission_prob(df, state_list)  # works but need to adjust distributions
         
     ## data emission probability
     group_df = groupby(df, :ID)
     
     num_time_series = size(group_df, 1)
-    num_state = 4
-    # num_state = size(state_list, 1) # what is the format of state list??
+    num_state = size(state_list, 2) # follow the expert distribution list format of LRMoE
 
     obs_seq_emiss_list = Array{Any}(undef, num_time_series)
     
@@ -24,7 +23,8 @@ function CTHMM_precompute_batch_data_emission_prob(df)  # works but need to adju
         data = group_df[g].delta_radian # just as an example
 
         for s = 1:num_state
-            obs_seq_emiss_list[g][1][:, s] = map(x -> ismissing(x) ? 1 : pdf.(Normal(0, 0.5*s), x), data)
+            obs_seq_emiss_list[g][1][:, s] = map(x -> ismissing(x) ? 1 : Distributions.pdf.(Distributions.Normal(0, 0.5*s), x), data)
+            
             # assume emission probability of missing data = 1
             # testing with variances 0.5, 1, 1.5, 2
             # emiss_prob = mvnpdf[data, state_list[s].mu, state_list[s].var]  # assume normal at this point; change probability distributions later
@@ -40,20 +40,20 @@ end
 
 
 
-function CTHMM_learn_onetime_precomputation(train_idx_list)
+# function CTHMM_learn_onetime_precomputation(train_idx_list)
 
-    # global is_use_distinct_time_grouping
-    # global distinct_time_list
-    # global learn_performance
+#     # global is_use_distinct_time_grouping
+#     # global distinct_time_list
+#     # global learn_performance
     
-    ## precomputation of state emission prob of observations
-    ## find out distinct time from the dataset
-    distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
+#     ## precomputation of state emission prob of observations
+#     ## find out distinct time from the dataset
+#     distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
 
-    if (is_use_distinct_time_grouping .== 1)
-        [distinct_time_list] = CTHMM_precompute_distinct_time_intv[train_idx_list]
-    end
-    ## compute all data emission probability
-    CTHMM_precompute_batch_data_emission_prob[train_idx_list]
+#     if (is_use_distinct_time_grouping .== 1)
+#         [distinct_time_list] = CTHMM_precompute_distinct_time_intv[train_idx_list]
+#     end
+#     ## compute all data emission probability
+#     CTHMM_precompute_batch_data_emission_prob[train_idx_list]
 
-end
+# end
