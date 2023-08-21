@@ -1,4 +1,4 @@
-function CTHMM_precompute_batch_data_emission_prob(df, state_list)  # works but need to adjust distributions
+function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list)  # works but need to adjust distributions
         
     ## data emission probability
     group_df = groupby(df, :ID)
@@ -21,19 +21,15 @@ function CTHMM_precompute_batch_data_emission_prob(df, state_list)  # works but 
     
         ## compute emission probabilities for each dimension of observations for each state
         ## assume each dimension of observations are independent conditioned on the state
-        data = [transpose(group_df[g].delta_radian);
-                transpose(group_df[g].acceleration)] # just as an example
+        data = select(group_df[g], response_list) # just as an example
 
         for s = 1:num_state
             temp = 1.0
             for d = 1:num_dim
-                temp = temp .* map(x -> ismissing(x) ? 1 : CTHMM.pdf.(state_list[d, s], x), data[d, :])
+                temp = temp .* map(x -> ismissing(x) ? 1 : CTHMM.pdf.(state_list[d, s], x), data[:, d])
+                # assume emission probability of missing data = 1
             end
-            obs_seq_emiss_list[g][1][:, s] = temp
-            
-            # assume emission probability of missing data = 1
-            # testing with variances 0.5, 1, 1.5, 2
-            # emiss_prob = mvnpdf[data, state_list[s].mu, state_list[s].var]  # assume normal at this point; change probability distributions later
+            obs_seq_emiss_list[g][1][:, s] = temp        
         end
 
         obs_seq_emiss_list[g][2] = log.(obs_seq_emiss_list[g][1])  # log_data_emiss_prob_list

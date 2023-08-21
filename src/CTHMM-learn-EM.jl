@@ -1,57 +1,56 @@
-function CTHMM_learn_para_EM(ori_method, max_iter, ori_is_outer_soft, Q_mat_init, train_idx_list)
+function CTHMM_learn_para_EM(ori_method, max_iter, ori_is_outer_soft, Q_mat_init, state_init_prob_list_init, state_list_init, df)
 
-    ## start timer()
-    tStart = tic()
+    # ## start timer()
+    # tStart = tic()
 
-    distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
+    ## precomputation before iteration
+    # only once in the whole EM:
+    distinct_time_list = CTHMM_precompute_distinct_time_list(df.time_interval)
+    num_state = size(Q_mat_init, 1)
+    num_dim = size(state_list_init, 1)
+    num_distinct_time = size(distinct_time_list, 1) # assume one Q for all time series
+    # have to redo for updated Q and distribution parameters:
     distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat_init)  # with initial guess Q0
-
-    ## one time precomputation before iteration
-
-    CTHMM_learn_onetime_precomputation[train_idx_list]
-    
-    CTHMM_learn_init_common[]
-    
-    ## to decide whether to draw 2D fig
-    num_state = size(state_list, 1)
+    obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df, state_list_init)  # with initial parameter guess
     
     ## iteration
     pre_all_subject_prob = -Inf
     model_iter_count = 0
     
-    ## init learn performance
+    ## init learn performance; compute initial likelihood??
     CTHMM_learn_init_performance[ori_method, is_outer_soft, max_iter]
+
+    Q_mat = Q_mat_init
+    state_init_prob_list = state_init_prob_list_init
 
     while (model_iter_count < max_iter)
         
-        tStartIter = tic
+        # tStartIter = tic
         
         ## add counter
-        model_iter_count = model_iter_count + 1  
+        model_iter_count = model_iter_count + 1
             
-        # ## create dir for current folder
-        # top_out_folder = sprintf("#s/Iter_#d", out_dir, model_iter_count)
-        # if (~exist(top_out_folder, "dir"))
-        #     mkdir(top_out_folder)
-        # end    
-        # str = sprintf("*** Iter = #d:\n", model_iter_count)
-        # CTHMM_print_log[str]
+        ## E-step
+        ## batch soft decoding (option = 1), saving Svi to df
+        cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df, response_list, Q_mat, state_init_prob_list, state_list)
         
-        # ## reset main global parameters
-        # CTHMM_learn_iter_reset_variables[]
-            
-        ## do precomputation for each method
-        CTHMM_learn_iter_precomputation[]
-        num_distinct_time = size(distinct_time_list, 1)
-            
-        ## batch outer soft/hard decoding
-        [cur_all_subject_prob] = CTHMM_learn_batch_outer_decoding_Etij_for_subjects[is_outer_soft, train_idx_list]    
+        ## M-step
+        ## part 1: learning Q_mat for every distinct time
+        Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
+        Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
+
+        ## part 2: learning state dependent distribution parameters
+        for d in 1:num_dim
+            for i in 1:num_state
+                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)])
+            end
+        end
+
         
-        ## now we can start learning for every distinct time
-        tStartTemp = tic()
-        str = sprintf("For each distinct time interval, compute inner expectations...\n")
-        fprintf(str)
-        CTHMM_learn_Expm_accum_Nij_Ti_for_all_time_intervals[]
+
+
+
+        
 
         tEndTemp = toc(tStartTemp)
         str = sprintf("\nCompute all inner counts: #d minutes & #f seconds\n", floor(tEndTemp/60),rem(tEndTemp,60))

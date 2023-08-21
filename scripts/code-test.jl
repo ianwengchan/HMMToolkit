@@ -3,7 +3,6 @@ using DrWatson
 
 include(srcdir("CTHMM.jl"))
 using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2
-# using CSV, DataFrames, Dates, JLD2
 using .CTHMM
 
 # CTHMM-precompute-distinct-time.jl - tested
@@ -13,6 +12,7 @@ using .CTHMM
 # CTHMM-batch-decode.jl - tested
 # CTHMM-learn-nij-taui.jl - tested
 # CTHMM-learn-Q.jl - tested
+# CTHMM-
 
 include(srcdir("CTHMM-precompute-distinct-time.jl"))
 include(srcdir("CTHMM-precompute.jl"))
@@ -21,9 +21,6 @@ include(srcdir("CTHMM-decode-viterbi.jl"))
 include(srcdir("CTHMM-batch-decode.jl"))
 include(srcdir("CTHMM-learn-nij-taui.jl"))
 include(srcdir("CTHMM-learn-Q.jl"))
-# include(srcdir("utils.jl"))
-# include(srcdir("expert.jl"))
-# include(srcdir("experts/normal.jl"))
 
 df_longer = load(datadir("df_longer.jld2"), "df_longer")
 
@@ -33,80 +30,45 @@ Q_mat0 = [-1.5 0.5 0.5 0.5;
         0.2 0.2 -0.6 0.2;
         0.5 0.5 0.5 -1.5]
 
-state_init_prob_list = [0.5; 0.25; 0.15; 0.1]
+state_init_prob_list0 = [0.5; 0.25; 0.15; 0.1]
 
-
-# time_interval_list = df_longer.time_interval
-
-# distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
-# # OK
-
-# distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
-# # OK
-
-
-# group_df = groupby(df_longer, :ID)
-
-# num_time_series = size(group_df, 1)
-# num_state = 4
-    
-# obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df_longer)
-# # OK
-
-
-# g = 1
-# seq_df = group_df[g]
-# data_emiss_prob_list = obs_seq_emiss_list[g][1]
-# log_data_emiss_prob_list = obs_seq_emiss_list[g][2]
-
-# num_state = size(Q_mat, 1)
-# len_time_series = nrow(seq_df)
-# time_interval_list = collect(skipmissing(seq_df.time_interval))
-
-# distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
-# distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
-
-# # log_prob from soft decoding is better than that from hard decoding
-# Svi, Evij, log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
-# # OK
-# best_state_seq, best_log_prob = CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_init_prob_list)
-# # OK
-# cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df_longer, Q_mat, state_init_prob_list)
-# # OK
-
-
-# Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
-# # OK
-
-# Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
-
+response_list = ["delta_radian", "acceleration"]
 
 df = Base.copy(df_longer)
 Q_mat_init = Base.copy(Q_mat0)
+state_init_prob_list_init = Base.copy(state_init_prob_list0)
+
+state_list_init = [CTHMM.NormalExpert(0, 0.5) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1.5) CTHMM.NormalExpert(0, 2);
+                CTHMM.NormalExpert(1, 0.5) CTHMM.NormalExpert(1, 1) CTHMM.NormalExpert(1, 1.5) CTHMM.NormalExpert(1, 2)]
 
 distinct_time_list = CTHMM_precompute_distinct_time_list(df.time_interval)
 num_state = size(Q_mat_init, 1)
+num_dim = size(state_list_init, 1)
 num_distinct_time = size(distinct_time_list, 1) # assume one Q for all time series
 # have to redo for updated Q and distribution parameters:
 distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat_init)  # with initial guess Q0
-obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df)  # with initial parameter guess
+obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list_init)  # with initial parameter guess
 
 pre_all_subject_prob = -Inf
 model_iter_count = 0
 
 Q_mat = Base.copy(Q_mat_init)
+state_init_prob_list = Base.copy(state_init_prob_list_init)
+state_list = Base.copy(state_list_init)
 
 model_iter_count = model_iter_count + 1
 
-cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df, Q_mat, state_init_prob_list)
+cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df, response_list, Q_mat, state_init_prob_list, state_list)
 
 Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
 Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
+for d in 1:num_dim
+        for i in 1:num_state
+                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)])
+        end
+end
 
-model_init = [CTHMM.NormalExpert(0, 0.5) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1.5);
-                CTHMM.NormalExpert(1, 0.5) CTHMM.NormalExpert(1, 1) CTHMM.NormalExpert(1, 1.5)]
+state_list
 
-CTHMM.EM_M_expert_exact(CTHMM.NormalExpert(0, 0.5), df.delta_radian, df.Sv1)
-EM_M_expert_exact(df.delta_radian, df.Sv2)
-EM_M_expert_exact(df.delta_radian, df.Sv3)
+

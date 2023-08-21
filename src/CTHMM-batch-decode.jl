@@ -1,12 +1,11 @@
-function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, Q_mat, state_init_prob_list)
+function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
 
     cur_all_subject_prob = 0.0
 
     ## precomputation
     time_interval_list = df.time_interval
     distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
-    # distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
-    obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df)
+    obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list)
 
     num_distinct_time = size(distinct_time_list, 1) # from all time series
     num_state = size(Q_mat, 1)
