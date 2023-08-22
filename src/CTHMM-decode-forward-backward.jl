@@ -83,6 +83,60 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, stat
     log_prob = 0
     log_prob = log_prob - sum(log.(C))
 
-    return Svi, Evij, log_prob   # Pt_list?
+    return Svi, Evij, log_prob
+    
+end
+
+
+function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, state_init_prob_list)
+
+    # computing the likelihood via soft decoding only needs the forward step
+
+    num_state = size(Q_mat, 1)
+    len_time_series = nrow(seq_df)
+    time_interval_list = collect(skipmissing(seq_df.time_interval))   # already feed-in the time intervals
+
+    distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
+    distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
+
+    ## precompute data emission prob
+    ## obs_seq_emiss_list[g][1] # data_emiss_prob_list
+    ## obs_seq_emiss_list[g][2] # log_data_emiss_prob_list
+
+    ## compute alpha()
+    ALPHA = zeros(len_time_series, num_state)
+    C = zeros(len_time_series, 1) # rescaling factor
+
+    ## precomputing of Pt for every timepoint
+    Pt_list = Array{Any}(undef, (len_time_series-1))
+    for v = 1:(len_time_series-1)
+        T = time_interval_list[v]
+        t_idx = findfirst(x -> x .== T, distinct_time_list)
+        Pt_list[v] = distinct_time_Pt_list[t_idx]
+    end
+
+    ## init alpha for time 1
+    ALPHA[1, :] = state_init_prob_list .* data_emiss_prob_list[1, :]
+    C[1] = 1.0 / sum(ALPHA[1, :])
+    ALPHA[1, :] = ALPHA[1, :] .* C[1]
+    
+    for v = 2:len_time_series
+
+        for s = 1:num_state # current state
+            prob = 0.0
+            prob = prob + sum(ALPHA[v-1, :] .* Pt_list[v-1][:, s]) * data_emiss_prob_list[v, s]
+            ALPHA[v, s] = prob   
+        end # s
+
+        # scaling
+        C[v] = 1.0 / sum(ALPHA[v, :])
+        ALPHA[v, :] = ALPHA[v, :] .* C[v]
+    end # v
+    
+    ## check rabinar's paper
+    log_prob = 0
+    log_prob = log_prob - sum(log.(C))
+
+    return log_prob
     
 end
