@@ -1,7 +1,5 @@
-function CTHMM_learn_para_EM(ori_method, max_iter, ori_is_outer_soft, Q_mat_init, state_init_prob_list_init, state_list_init, df)
-
-    # ## start timer()
-    # tStart = tic()
+function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init, state_list_init;
+    ϵ = 1e-03, max_iter = 200, soft_decode = 1)
 
     ## precomputation before iteration
     # only once in the whole EM:
@@ -9,102 +7,96 @@ function CTHMM_learn_para_EM(ori_method, max_iter, ori_is_outer_soft, Q_mat_init
     num_state = size(Q_mat_init, 1)
     num_dim = size(state_list_init, 1)
     num_distinct_time = size(distinct_time_list, 1) # assume one Q for all time series
-    # have to redo for updated Q and distribution parameters:
-    distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat_init)  # with initial guess Q0
-    obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df, state_list_init)  # with initial parameter guess
     
-    ## iteration
-    pre_all_subject_prob = -Inf
-    model_iter_count = 0
+    # start EM iteration
+    Q_mat = Base.copy(Q_mat_init)
+    state_init_prob_list = Base.copy(state_init_prob_list_init)
+    state_list = Base.copy(state_list_init)
+    ll_em_old = -Inf
+    ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+    iter = 0
     
-    ## init learn performance; compute initial likelihood??
-    CTHMM_learn_init_performance[ori_method, is_outer_soft, max_iter]
-
-    Q_mat = Q_mat_init
-    state_init_prob_list = state_init_prob_list_init
-
-    while (model_iter_count < max_iter)
-        
-        # tStartIter = tic
+    while (ll_em - ll_em_old > ϵ) && (iter < max_iter)
         
         ## add counter
-        model_iter_count = model_iter_count + 1
+        iter = iter + 1
+        ll_em_old = ll_em
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
-        cur_all_subject_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(1, df, response_list, Q_mat, state_init_prob_list, state_list)
+        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
         
-        ## M-step
-        ## part 1: learning Q_mat for every distinct time
+        ## M-step, with last estimated parameters
+        ## part 1a: learning initial state probabilities π
+        for i in 1:num_state
+            state_init_prob_list[i] = sum(df.start .* df[:, string("Sv", i)])
+        end
+        state_init_prob_list = state_init_prob_list ./ sum(state_init_prob_list)
+
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        s = ll_em - ll_em_temp > 0 ? "+" : "-"
+        pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
+        if (print_steps > 0) & (iter % print_steps == 0)
+            @info(
+                "Iteration $(iter), updating π: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+            )
+        end
+        ll_em_temp = ll_em
+
+        ## part 1b: learning Q_mat using distinct time grouping
+        distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
         Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
-        Q_mat_new = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
+        Q_mat = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
+
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        s = ll_em - ll_em_temp > 0 ? "+" : "-"
+        pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
+        if (print_steps > 0) & (iter % print_steps == 0)
+            @info(
+                "Iteration $(iter), updating Q: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+            )
+        end
+        ll_em_temp = ll_em
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
             for i in 1:num_state
                 state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)])
+                # Svi has not been changed since E-step
             end
         end
 
-        
-
-
-
-        
-
-        tEndTemp = toc(tStartTemp)
-        str = sprintf("\nCompute all inner counts: #d minutes & #f seconds\n", floor(tEndTemp/60),rem(tEndTemp,60))
-        CTHMM_print_log[str];    
-        learn_performance.time_inner_list[model_iter_count] = tEndTemp;    
-        ## ===========================
-        tEndIter = toc(tStartIter)
-        str = sprintf("Iter #d: #d minutes & #f seconds\n", model_iter_count, floor(tEndIter/60),rem(tEndIter,60))
-        CTHMM_print_log[str]
-        learn_performance.time_list[model_iter_count] = tEndIter;        
-        ## ===========================
-        
-        ## compute current learning performance
-        CTHMM_learn_record_performance[]
-        
-        ## Update Q_mat: qij = Nij/Ti
-        pre_Q_mat = Q_mat
-        CTHMM_learn_update_Q_mat[]
-        Q_mat
-        
-        ## Store main variables in top_out_folder
-        CTHMM_learn_store_main_variables[top_out_folder]
-        
-        ## output the time for one iteration   
-        tEnd = toc(tStart)
-        str = sprintf("Total elapse time: #d minutes & #f seconds\n", floor(tEnd/60),rem(tEnd,60))
-        CTHMM_print_log[str]
-        
-        ## check if reached a fixed point
-        [is_termindate] = CTHMM_learn_decide_termination[cur_all_subject_prob, pre_all_subject_prob];    
-        if (is_termindate .== 1)
-            str = sprintf("#s/num_iter.txt", out_dir)
-            fp = fopen(str, "wt")
-            fprintf(fp, "#d\n", model_iter_count)
-            fclose(fp)
-            if (cur_all_subject_prob .< pre_all_subject_prob)
-                Q_mat = pre_Q_mat
-            end
-            break()
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        s = ll_em - ll_em_temp > 0 ? "+" : "-"
+        pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
+        if (print_steps > 0) & (iter % print_steps == 0)
+            @info(
+                "Iteration $(iter), updating distributions: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+            )
         end
+        ll_em_temp = ll_em        
         
-        ## store current all subject prob
-        pre_all_subject_prob = cur_all_subject_prob
+        # ## check if reached a fixed point
+        # [is_termindate] = CTHMM_learn_decide_termination[cur_all_subject_prob, pre_all_subject_prob];    
+        # if (is_termindate .== 1)
+        #     str = sprintf("#s/num_iter.txt", out_dir)
+        #     fp = fopen(str, "wt")
+        #     fprintf(fp, "#d\n", model_iter_count)
+        #     fclose(fp)
+        #     if (cur_all_subject_prob .< pre_all_subject_prob)
+        #         Q_mat = pre_Q_mat
+        #     end
+        #     break()
+        # end
         
-    end # ite
+        # ## store current all subject prob
+        # pre_all_subject_prob = cur_all_subject_prob
+        
+    end # iter
     
-    ## record performance
-    CTHMM_learn_stop_record_performance[]; 
-    
-    tEnd = toc(tStart)
-    str = sprintf("Total elapse time: #d minutes & #f seconds\n", floor(tEnd/60),rem(tEnd,60))
-    CTHMM_print_log[str]
-    learn_performance.total_time = tEnd
-    sprintf("Q matrix below")
-    Q_mat
-    
+    converge = (ll_em - ll_em_old > ϵ) ? false : true
+
+    return (Q_mat_fit = Q_mat, init_prob_list_fit = init_prob_list, state_list_fit = state_list,
+            converge = converge, iter = iter, ll = ll_em)
+
 end
