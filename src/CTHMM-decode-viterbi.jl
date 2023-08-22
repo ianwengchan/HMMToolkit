@@ -1,4 +1,4 @@
-function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_init_prob_list)
+function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
 
     num_state = size(Q_mat, 1)
     len_time_series = nrow(seq_df)
@@ -29,7 +29,7 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, state_ini
     max_log_prob = -Inf
 
     log_emiss_prob = log_data_emiss_prob_list[1, :]
-    log_prob = log.(state_init_prob_list) + log_emiss_prob
+    log_prob = log.(π_list) + log_emiss_prob
 
     T1[:, 1] = log_prob
     T2[:, 1] .= 0    # at time 0 there is no previous state

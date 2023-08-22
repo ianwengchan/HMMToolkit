@@ -1,4 +1,4 @@
-function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init, state_list_init;
+function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_init;
     ϵ = 1e-03, max_iter = 200, soft_decode = 1)
 
     ## precomputation before iteration
@@ -10,10 +10,10 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init
     
     # start EM iteration
     Q_mat = Base.copy(Q_mat_init)
-    state_init_prob_list = Base.copy(state_init_prob_list_init)
+    π_list = Base.copy(π_list_init)
     state_list = Base.copy(state_list_init)
     ll_em_old = -Inf
-    ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+    ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
     iter = 0
     
     while (ll_em - ll_em_old > ϵ) && (iter < max_iter)
@@ -24,21 +24,21 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
-        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         
         ## M-step, with last estimated parameters
-        ## part 1a: learning initial state probabilities π
+        ## part 1a: learning initial state probabilities π_list
         for i in 1:num_state
-            state_init_prob_list[i] = sum(df.start .* df[:, string("Sv", i)])
+            π_list[i] = sum(df.start .* df[:, string("Sv", i)])
         end
-        state_init_prob_list = state_init_prob_list ./ sum(state_init_prob_list)
+        π_list = π_list ./ sum(π_list)
 
-        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         s = ll_em - ll_em_temp > 0 ? "+" : "-"
         pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
         if (print_steps > 0) & (iter % print_steps == 0)
             @info(
-                "Iteration $(iter), updating π: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+                "Iteration $(iter), updating π_list: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
             )
         end
         ll_em_temp = ll_em
@@ -48,7 +48,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init
         Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
         Q_mat = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
-        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         s = ll_em - ll_em_temp > 0 ? "+" : "-"
         pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
         if (print_steps > 0) & (iter % print_steps == 0)
@@ -66,7 +66,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init
             end
         end
 
-        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, state_init_prob_list, state_list)
+        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         s = ll_em - ll_em_temp > 0 ? "+" : "-"
         pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
         if (print_steps > 0) & (iter % print_steps == 0)
@@ -96,7 +96,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, state_init_prob_list_init
     
     converge = (ll_em - ll_em_old > ϵ) ? false : true
 
-    return (Q_mat_fit = Q_mat, init_prob_list_fit = init_prob_list, state_list_fit = state_list,
+    return (Q_mat_fit = Q_mat, π_list_fit = π_list, state_list_fit = state_list,
             converge = converge, iter = iter, ll = ll_em)
 
 end
