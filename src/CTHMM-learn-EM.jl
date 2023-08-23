@@ -61,7 +61,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
             for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)])
+                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=false)
                 # Svi has not been changed since E-step
             end
         end
