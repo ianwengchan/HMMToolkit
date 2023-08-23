@@ -62,7 +62,32 @@ ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, Ï
 iter = 0
 
 
+ll_em, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, Ï€_list, state_list)
+
+ye = df.delta_radian
+z_e_obs = df.Sv1
 
 
 
+# Step 3: Calculate the weighted median
+function weighted_median(obs, weights)
+        sorted_data = sort(DataFrame(obs=obs, weights=weights), :obs)
+        total_weight = sum(weights)
+
+        cum_weights = cumsum(sorted_data.weights)
+        midpoint = total_weight / 2.0
+
+        idx = findfirst(cum_weights .>= midpoint)
+        if isodd(length(weights))
+                return sorted_data[idx, :obs]
+        else
+                prev_idx = idx - 1
+                return (sorted_data[prev_idx, :obs] + sorted_data[idx, :obs]) / 2.0
+        end
+end
+    
+obs = data[:, :Observations]
+weights = data[:, :Weights]
+
+weighted_median(obs, weights)
 

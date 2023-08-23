@@ -98,7 +98,7 @@ function ks_distance(y, d::NormalExpert)
     return HypothesisTests.ksstats(y, Distributions.Normal(d.μ, d.σ))[2]
 end
 
-## Simululation
+## Simulation
 sim_expert(d::NormalExpert) = Distributions.rand(Distributions.Normal(d.μ, d.σ), 1)[1]
 
 ## penalty

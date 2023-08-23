@@ -53,9 +53,9 @@ Broadcast.broadcastable(d::NonZIContinuousExpert) = Ref(d)
 
 const continuous_experts = [
     # "burr", "ziburr",
-    # "gamma", "zigamma",
+    "gamma", "zigamma",
     # "inversegaussian", "ziinversegaussian",
-    # "lognormal", "zilognormal",
+    "lognormal", "zilognormal",
     "normal",
     # "weibull", "ziweibull",]
 ]

@@ -67,7 +67,7 @@ function cdf(d::GammaExpert, x...)
 end
 
 ## expert_ll, etc
-expert_ll_exact(d::GammaExpert, x::Real) = LRMoE.logpdf(d, x)
+expert_ll_exact(d::GammaExpert, x::Real) = CTHMM.logpdf(d, x)
 function expert_ll(d::GammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -120,7 +120,7 @@ function ks_distance(y, d::GammaExpert)
     )
 end
 
-## Simululation
+## Simulation
 sim_expert(d::GammaExpert) = Distributions.rand(Distributions.Gamma(d.k, d.θ), 1)[1]
 
 ## penalty

@@ -48,7 +48,7 @@ end
 cdf(d::LogNormalExpert, x...) = Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
 
 ## expert_ll, etc
-expert_ll_exact(d::LogNormalExpert, x::Real) = LRMoE.logpdf(d, x)
+expert_ll_exact(d::LogNormalExpert, x::Real) = CTHMM.logpdf(d, x)
 function expert_ll(d::LogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -98,7 +98,7 @@ function ks_distance(y, d::LogNormalExpert)
     )
 end
 
-## Simululation
+## Simulation
 sim_expert(d::LogNormalExpert) = Distributions.rand(Distributions.LogNormal(d.μ, d.σ), 1)[1]
 
 ## penalty
