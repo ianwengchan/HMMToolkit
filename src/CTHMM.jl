@@ -28,6 +28,7 @@ import Distributions: @distr_support, RecursiveProbabilityEvaluator
 import Distributions: Bernoulli, Multinomial
 import Distributions: Binomial, Poisson
 import Distributions: Gamma, InverseGaussian, LogNormal, Normal, Weibull
+import Distributions: Laplace, VonMises
 
 using InvertedIndices
 import InvertedIndices: Not
@@ -54,6 +55,12 @@ using Logging
 
 using Roots
 import Roots: find_zero, Order2
+
+using Bessels
+import Bessels: besseli0, besseli1
+
+using DataFrames
+import DataFrames: DataFrame
 
 # export
 #     ## generic types

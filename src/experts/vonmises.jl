@@ -1,5 +1,5 @@
 """
-    VonmisesExpert(μ, κ)
+    VonMisesExpert(μ, κ)
 
 PDF:
 
@@ -7,6 +7,12 @@ PDF:
     f(x; \\mu, \\kappa) = \frac{1}{2 \\pi I_{0}(\\kappa)}
 \\exp \\left( \\kappa - cos(x - \\mu)\\right), \\kappa > 0
 ```
+
+modified Bessels function and their ratio A(k)
+[A new type of sharp bounds for ratios of modified Bessel functions](https://www.sciencedirect.com/science/article/pii/S0022247X16302402)
+require: 
+import Pkg; Pkg.add("Bessels")
+using Bessels
 
 See also: [von Mises Distribution](https://en.wikipedia.org/wiki/Von_Mises_distribution)
 
@@ -37,15 +43,35 @@ function convert(::Type{VonMisesExpert{T}}, d::VonMisesExpert{S}) where {T<:Real
 end
 copy(d::VonMisesExpert) = VonMisesExpert(d.μ, d.κ; check_args=false)
 
+
+function _map_vonmises_domain(x, μ)
+    if x > μ + π
+        diff = x - (μ + π)
+        period = diff ÷ 2π
+        return x - (period+1) * 2π
+    elseif x < μ - π
+        diff = (μ - π) - x
+        period = diff ÷ 2π
+        return x + (period+1) * 2π
+    else
+        return x
+    end
+end
+
+function map_vonmises_domain(x, μ)
+    return _map_vonmises_domain.(x, Ref(μ))
+end
+
+
 ## Loglikelihood of Expert
 function logpdf(d::VonMisesExpert, x...)
-    return Distributions.logpdf.(Distributions.VonMises(d.μ, d.κ), x...)
+    return Distributions.logpdf.(Distributions.VonMises(d.μ, d.κ), map_vonmises_domain(x, d.μ)...)
 end
-pdf(d::VonMisesExpert, x...) = Distributions.pdf.(Distributions.VonMises(d.μ, d.κ), x...)
+pdf(d::VonMisesExpert, x...) = Distributions.pdf.(Distributions.VonMises(d.μ, d.κ), map_vonmises_domain(x, d.μ)...)
 function logcdf(d::VonMisesExpert, x...)
-    return Distributions.logcdf.(Distributions.VonMises(d.μ, d.κ), x...)
+    return Distributions.logcdf.(Distributions.VonMises(d.μ, d.κ), map_vonmises_domain(x, d.μ)...)
 end
-cdf(d::VonMisesExpert, x...) = Distributions.cdf.(Distributions.VonMises(d.μ, d.κ), x...)
+cdf(d::VonMisesExpert, x...) = Distributions.cdf.(Distributions.VonMises(d.μ, d.κ), map_vonmises_domain(x, d.μ)...)
 
 ## expert_ll, etc
 expert_ll_exact(d::VonMisesExpert, x::Real) = CTHMM.logpdf(d, x)
@@ -60,15 +86,6 @@ function expert_ll(d::VonMisesExpert, tl::Real, yl::Real, yu::Real, tu::Real)
 end
 
 exposurize_expert(d::VonMisesExpert; exposure=1) = d
-
-"""
-modified Bessels function and their ratio A(k)
-
-[A new type of sharp bounds for ratios of modified Bessel functions](https://www.sciencedirect.com/science/article/pii/S0022247X16302402)
-require: 
-import Pkg; Pkg.add("Bessels")
-using Bessels
-"""
 
 # function A(x)
 function A(x::Real)
@@ -171,7 +188,7 @@ function EM_M_expert_exact(d::VonMisesExpert,
     #             (μ_new)^2 * sum(skipmissing(term_zkz))[1]
     #     )
     # end
-    tmp = numerator / denominator
+    tmp = CTHMM.invA(numerator / denominator)
     κ_new = sqrt(maximum([0.0, tmp]))
 
     return VonMisesExpert(μ_new, κ_new)
