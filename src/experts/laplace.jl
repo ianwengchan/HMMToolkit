@@ -141,4 +141,4 @@ function EM_M_expert_exact(d::LaplaceExpert,
     θ_new = sqrt(maximum([0.0, tmp]))
 
     return LaplaceExpert(μ_new, θ_new)
-endd
+end

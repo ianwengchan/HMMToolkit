@@ -20,5 +20,7 @@ Pkg.add("Optim")
 Pkg.add("Clustering")
 Pkg.add("HypothesisTests")
 Pkg.add("Roots")
+Pkg.add("StatsBase")
+Pkg.add("Bessels")
 
 include(srcdir("CTHMM.jl"))

@@ -55,8 +55,10 @@ const continuous_experts = [
     # "burr", "ziburr",
     "gamma", "zigamma",
     # "inversegaussian", "ziinversegaussian",
+    "laplace",
     "lognormal", "zilognormal",
     "normal",
+    "vonmises",
     # "weibull", "ziweibull",]
 ]
 

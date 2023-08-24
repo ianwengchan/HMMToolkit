@@ -2,6 +2,7 @@ name = "FitHMM-jl"
 authors = ["Sophia Chan"]
 
 [deps]
+Bessels = "0e736298-9ec6-45e8-9647-e4fc86a2fe38"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CategoricalArrays = "324d7699-5711-5eae-9e2f-1d82baa6b597"
 Clustering = "aaaa29a8-35af-508c-8bc3-b662a17a0fe5"
