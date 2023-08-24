@@ -8,6 +8,9 @@ import Base.Math: @horner
 import Base: π
 import Base.Threads: @threads, nthreads, threadid
 
+using StatsBase
+import StatsBase: weights
+
 using StatsFuns
 import StatsFuns: log1mexp, log1pexp, logsumexp
 import StatsFuns: sqrt2, invsqrt2π
@@ -167,6 +170,7 @@ include("expert.jl")
 
 # include("paramsinit.jl")
 # include("fit.jl")
+include("em.jl")
 
 # include("simulation.jl")
 # include("predict.jl")

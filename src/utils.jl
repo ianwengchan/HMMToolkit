@@ -17,6 +17,10 @@ end
 # rowlogsumexps
 rowlogsumexp(x) = logsumexp(x; dims=2)
 
+# weighted median
+weighted_median(x, w) = Statistics.median(convert(Array{Float64}, x), 
+    StatsBase.weights(convert(Array{Float64}, w)))
+
 # # replace nan by a number
 # function nan2num(x, g)
 #     for i in eachindex(x)
