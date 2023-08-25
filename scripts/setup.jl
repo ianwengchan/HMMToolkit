@@ -22,5 +22,6 @@ Pkg.add("HypothesisTests")
 Pkg.add("Roots")
 Pkg.add("StatsBase")
 Pkg.add("Bessels")
+Pkg.add("Random")
 
 include(srcdir("CTHMM.jl"))

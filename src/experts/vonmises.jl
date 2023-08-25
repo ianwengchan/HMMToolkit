@@ -25,7 +25,7 @@ struct VonMisesExpert{T<:Real} <: RealContinuousExpert
 end
 
 function VonMisesExpert(μ::T, κ::T; check_args=true) where {T<:Real}
-    check_args && @check_args(VonMisesExpert, κ > zero(κ)) # scale parameter κ > 0 
+    check_args && @check_args(VonMisesExpert, κ >= zero(κ)) # scale parameter κ > 0 
     return VonMisesExpert{T}(μ, κ)
 end
 

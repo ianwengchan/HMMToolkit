@@ -18,7 +18,7 @@ struct LaplaceExpert{T<:Real} <: RealContinuousExpert
 end
 
 function LaplaceExpert(μ::T, θ::T; check_args=true) where {T<:Real}
-    check_args && @check_args(LaplaceExpert, θ > zero(θ))
+    check_args && @check_args(LaplaceExpert, θ >= zero(θ))
     return LaplaceExpert{T}(μ, θ)
 end
 
