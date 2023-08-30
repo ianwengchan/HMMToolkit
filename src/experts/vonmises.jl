@@ -110,10 +110,14 @@ x = vcat(collect(1 : 0.01 : 5),
 invA_table = DataFrames.DataFrame([x, map(A, x)], [:x, :y])
 
 # function invA(y) use the table to estimate κ
-function invA(y::Real)
-    y = abs(y) # A(x) = -A(x)
-    @check_args(invA, y < maximum(invA_table.y) && y>0)
-            x = mean(filter(row -> isapprox(row.y, y, atol = 0.005) == true, invA_table).x) # linear interpolation
+function invA(y)
+    y = abs.(y) # A(x) = -A(x)
+    @check_args(invA, maximum(y) < maximum(invA_table.y) && minimum(y) > 0)
+            if size(y, 1) == 1
+                x = mean(filter(row -> isapprox(row.y, y, atol = 0.005) == true, invA_table).x) # linear interpolation
+            else
+                x = mean(invA_table.x[abs.(invA_table.y - y) .<= 0.005])
+            end
     return(round(x, digits=6))
 end
 
@@ -176,19 +180,17 @@ function EM_M_expert_exact(d::VonMisesExpert,
 
     #denominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]    
     denominator = sum(term_zkz)[1]
-    numerator = sum(term_zkz_cos_Y_minus_μ)[1]
-    # numerator = if penalty
-    #     (
-    #         sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
-    #         (μ_new)^2 * sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)
-    #     )
-    # else
-    #     (
-    #         sum(skipmissing(term_zkz_Y_sq))[1] - 2.0 * μ_new * sum(skipmissing(term_zkz_Y))[1] +
-    #             (μ_new)^2 * sum(skipmissing(term_zkz))[1]
-    #     )
-    # end
-    tmp = CTHMM.invA(numerator / denominator)
+    # numerator = sum(term_zkz_cos_Y_minus_μ)[1]
+    numerator = if penalty
+        (
+            ((pen_params_jk[1] - 1)./ invA_table.x) .- pen_params_jk[2] .+ sum(term_zkz_cos_Y_minus_μ)[1]
+        )
+    else
+        (
+            sum(term_zkz_cos_Y_minus_μ)[1]
+        )
+    end
+    tmp = CTHMM.invA(numerator ./ denominator)
     κ_new = sqrt(maximum([0.0, tmp]))
 
     return VonMisesExpert(μ_new, κ_new)

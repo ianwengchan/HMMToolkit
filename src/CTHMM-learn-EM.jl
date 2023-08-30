@@ -1,5 +1,5 @@
 function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_init;
-    ϵ = 1e-03, max_iter = 200, soft_decode = 1)
+    ϵ = 1e-03, max_iter = 200, Q_max_iter = 5, soft_decode = 1, print_steps = 1)
 
     ## precomputation before iteration
     # only once in the whole EM:
@@ -44,37 +44,45 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
         ll_em_temp = ll_em
 
         ## part 1b: learning Q_mat using distinct time grouping
-        distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
-        Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
-        Q_mat = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
-        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
-        s = ll_em - ll_em_temp > 0 ? "+" : "-"
-        pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
-        if (print_steps > 0) & (iter % print_steps == 0)
-            @info(
-                "Iteration $(iter), updating Q: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
-            )
-        end
-        ll_em_temp = ll_em
+        Q_old = copy(Q_mat) .- Inf
 
-        ## part 2: learning state dependent distribution parameters
-        for d in 1:num_dim
-            for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=false)
-                # Svi has not been changed since E-step
+        Q_iter = 0
+        while (Q_iter < Q_max_iter) # && (sum((Q_mat - Q_old) .^ 2) > 1e-10)
+            Q_iter = Q_iter + 1
+            Q_old = copy(Q_mat)
+            distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
+            Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
+            Q_mat = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
+
+            ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+            s = ll_em - ll_em_temp > 0 ? "+" : "-"
+            pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
+            if (print_steps > 0) & (iter % print_steps == 0)
+                @info(
+                    "Iteration $(iter) sub $(Q_iter), updating Q: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+                )
             end
+            ll_em_temp = ll_em
         end
 
-        ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
-        s = ll_em - ll_em_temp > 0 ? "+" : "-"
-        pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
-        if (print_steps > 0) & (iter % print_steps == 0)
-            @info(
-                "Iteration $(iter), updating distributions: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
-            )
-        end
-        ll_em_temp = ll_em        
+        # ## part 2: learning state dependent distribution parameters
+        # for d in 1:num_dim
+        #     for i in 1:num_state
+        #         state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=false)
+        #         # Svi has not been changed since E-step
+        #     end
+        # end
+
+        # ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+        # s = ll_em - ll_em_temp > 0 ? "+" : "-"
+        # pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
+        # if (print_steps > 0) & (iter % print_steps == 0)
+        #     @info(
+        #         "Iteration $(iter), updating distributions: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+        #     )
+        # end
+        # ll_em_temp = ll_em        
         
         # ## check if reached a fixed point
         # [is_termindate] = CTHMM_learn_decide_termination[cur_all_subject_prob, pre_all_subject_prob];    
