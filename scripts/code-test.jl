@@ -2,17 +2,11 @@ using DrWatson
 @quickactivate "FitHMM-jl"
 
 include(srcdir("CTHMM.jl"))
-using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2
+using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2, StatsBase, Bessels, Random
 using .CTHMM
 
-# CTHMM-precompute-distinct-time.jl - tested
-# CTHMM-precompute.jl - partially tested
-# CTHMM-decode-forward-backward.jl - tested
-# CTHMM-decode-viterbi.jl - tested
-# CTHMM-batch-decode.jl - tested
-# CTHMM-learn-nij-taui.jl - tested
-# CTHMM-learn-Q.jl - tested
-# CTHMM-
+# using XLSX
+# xf = DataFrame(XLSX.readtable(datadir("test_set.xlsx"), "Sheet1"))
 
 include(srcdir("CTHMM-precompute-distinct-time.jl"))
 include(srcdir("CTHMM-precompute.jl"))
@@ -21,73 +15,79 @@ include(srcdir("CTHMM-decode-viterbi.jl"))
 include(srcdir("CTHMM-batch-decode.jl"))
 include(srcdir("CTHMM-learn-nij-taui.jl"))
 include(srcdir("CTHMM-learn-Q.jl"))
+include(srcdir("CTHMM-learn-EM.jl"))
+include(srcdir("CTHMM-simulation.jl"))
 
 df_longer = load(datadir("df_longer.jld2"), "df_longer")
 
-# test with a CTHMM with 4 states, initiate Q
-Q_mat0 = [-1.5 0.5 0.5 0.5;
-        0.1 -0.3 0.1 0.1;
-        0.2 0.2 -0.6 0.2;
-        0.5 0.5 0.5 -1.5]
+# test with a CTHMM with 3 states, initiate Q
+Q_mat0 = [-0.6 0.2 0.4;
+        0.4 -1 0.6;
+        0.25 0.5 -0.75]
 
-π_list0 = [0.5; 0.25; 0.15; 0.1]
+π_list0 = [0.5; 0.3; 0.2]
 
 response_list = ["delta_radian", "acceleration"]
 
-df = Base.copy(df_longer)
-Q_mat_init = Base.copy(Q_mat0)
-π_list_init = Base.copy(π_list0)
+# state_list0 = [CTHMM.VonMisesExpert(0, 1.5) CTHMM.VonMisesExpert(-0.5, 1.5) CTHMM.VonMisesExpert(0.5, 1.5);
+#                 CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(-1.5, 1) CTHMM.NormalExpert(1.5, 1)]
 
-state_list_init = [CTHMM.NormalExpert(0, 0.5) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1.5) CTHMM.NormalExpert(0, 2);
-                CTHMM.NormalExpert(1, 0.5) CTHMM.NormalExpert(1, 1) CTHMM.NormalExpert(1, 1.5) CTHMM.NormalExpert(1, 2)]
-
-soft_decode = 1
-ϵ = 1e-03
-max_iter = 20
-print_steps = 1
-
-## precomputation before iteration
-# only once in the whole EM:
-distinct_time_list = CTHMM_precompute_distinct_time_list(df.time_interval)
-num_state = size(Q_mat_init, 1)
-num_dim = size(state_list_init, 1)
-num_distinct_time = size(distinct_time_list, 1) # assume one Q for all time series
-
-# start EM iteration
-Q_mat = Base.copy(Q_mat_init)
-π_list = Base.copy(π_list_init)
-state_list = Base.copy(state_list_init)
-ll_em_old = -Inf
-ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
-iter = 0
+state_list0 = [CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(-5, 1) CTHMM.NormalExpert(5, 1);
+                CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(2, 2) CTHMM.VonMisesExpert(-2, 2)]
 
 
-ll_em, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+# Q_mat0 = [-1.5 0.5 0.5 0.5;
+#         0.1 -0.3 0.1 0.1;
+#         0.2 0.2 -0.6 0.2;
+#         0.5 0.5 0.5 -1.5]
 
-ye = df.delta_radian
-z_e_obs = df.Sv1
+# π_list0 = [0.5; 0.25; 0.15; 0.1]
+
+# state_list_init = [CTHMM.NormalExpert(0, 0.5) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1.5) CTHMM.NormalExpert(0, 2);
+#                 CTHMM.NormalExpert(1, 0.5) CTHMM.NormalExpert(1, 1) CTHMM.NormalExpert(1, 1.5) CTHMM.NormalExpert(1, 2)]
 
 
+# df = Base.copy(df_longer)
+# Q_mat_init = Base.copy(Q_mat0)
+# π_list_init = Base.copy(π_list0)
+# state_list_init = Base.copy(state_list0)
 
-# Step 3: Calculate the weighted median
-function weighted_median(obs, weights)
-        sorted_data = sort(DataFrame(obs=obs, weights=weights), :obs)
-        total_weight = sum(weights)
+# fitted = CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_init)
 
-        cum_weights = cumsum(sorted_data.weights)
-        midpoint = total_weight / 2.0
 
-        idx = findfirst(cum_weights .>= midpoint)
-        if isodd(length(weights))
-                return sorted_data[idx, :obs]
-        else
-                prev_idx = idx - 1
-                return (sorted_data[prev_idx, :obs] + sorted_data[idx, :obs]) / 2.0
-        end
-end
-    
-obs = data[:, :Observations]
-weights = data[:, :Weights]
+Q_mat0
+π_list0
+state_list0
 
-weighted_median(obs, weights)
+df_sim = sim_dataset(Q_mat0, π_list0, state_list0, 500)
 
+Q_mat_init = [-0.2 0.1 0.1;
+        0.2 -0.4 0.2;
+        0.3 0.3 -0.6]
+
+π_list_init = [0.3; 0.3; 0.4]
+
+# state_list_init = [CTHMM.VonMisesExpert(0, 1) CTHMM.VonMisesExpert(0, 1) CTHMM.VonMisesExpert(0, 1);
+#                 CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1)]
+
+state_list_init = [CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(-5, 1) CTHMM.NormalExpert(5, 1);
+                        CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(2, 2) CTHMM.VonMisesExpert(-2, 2)]
+
+
+obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df_sim, ["response1"], state_list0)
+
+fitted = CTHMM_learn_EM(df_sim, ["response1", "response2"], Q_mat_init, π_list_init, state_list0; max_iter = 1000, Q_max_iter = 5)
+
+fitted.Q_mat_fit
+
+# one dimension NormalExperts
+# [-0.613577   0.166676   0.446901;
+# 0.41245   -0.936028   0.523578;
+# 0.24946    0.49158   -0.741039]
+# converged at 803 iterations
+
+# two dimensions, NormalExperts and VonMisesExperts
+# [-0.614169   0.24876    0.365409;
+# 0.434089  -0.949363   0.515274;
+# 0.247857   0.414409  -0.662266]
+# converged at 620 iterations
