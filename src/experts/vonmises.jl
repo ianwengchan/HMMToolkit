@@ -101,8 +101,8 @@ end
 # construct a index invA_table
 # if κ -> 1 VonMises distribution corresponds to uniform distribution so κ value below 1 is dropped
 # maximum(diff(invA_table.y)) < 0.005, 
-# 0.446390 < invA_table.y < 0.999898
-x = vcat(collect(1 : 0.01 : 5),
+# 0.0049999375 < invA_table.y < 0.999898
+x = vcat(collect(0.01 : 0.01 : 5),
          collect(5.1 : 0.1 : 20),
          collect(21.0 : 1.0 : 50),
          collect(55.0 : 5.0 : 200),
@@ -159,7 +159,7 @@ quantile(d::VonMisesExpert, p) = quantile(Distributions.VonMises(d.μ, d.κ), p)
 function EM_M_expert_exact(d::VonMisesExpert,
     ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 1.0])
+    penalty=true, pen_params_jk=[2.0 2.0])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
@@ -191,7 +191,9 @@ function EM_M_expert_exact(d::VonMisesExpert,
         )
     end
     tmp = CTHMM.invA(numerator ./ denominator)
-    κ_new = sqrt(maximum([0.0, tmp]))
+    κ_new = maximum([0.0, tmp])
+
+    println("μ $(μ_new), tmp $(tmp), κ $(κ_new)")
 
     return VonMisesExpert(μ_new, κ_new)
 end
