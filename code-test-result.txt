@@ -1,0 +1,73 @@
+# test with a CTHMM with 3 states
+Q_mat0 = [-0.1 0.02 0.08;
+        0.2 -1 0.8;
+        0.8 1.2 -2] ./ 1000
+
+π_list0 = [0.5; 0.3; 0.2]
+
+state_list0 = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(-4, 1) CTHMM.NormalExpert(6, 2)]
+
+Random.seed!(1234)
+df_sim = sim_dataset(Q_mat0, π_list0, state_list0, 500)
+
+Q_mat_init = [-0.2 0.1 0.1;
+        0.2 -0.4 0.2;
+        0.3 0.3 -0.6]
+
+π_list_init = [0.3; 0.3; 0.4]
+
+state_list_init = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2)]
+
+(Q_mat_fit = [-0.0009350452198908224 0.00014291413241493766 0.0007921310874758848; 1.7650332341499222e-5 -8.807810538315417e-5 7.042777304165494e-5; 0.0012902585823693765 0.0007473546944098414 -0.0020376132767792174], π_list_fit = [0.2979122512986018, 0.4701021879968086, 0.2319855607045896], state_list_fit = Main.CTHMM.NormalExpert{Float64}[Main.CTHMM.NormalExpert{Float64}(-4.005897098981455, 0.9940399368045336) Main.CTHMM.NormalExpert{Float64}(-0.018202744197096516, 2.01414461782366) Main.CTHMM.NormalExpert{Float64}(5.997029483698521, 2.01498007257116)], converge = true, iter = 60, ll = -91235.1656727325)
+
+
+
+Q_mat0 = [-0.1 0.02 0.08;
+        0.2 -1 0.8;
+        0.8 1.2 -2] ./ 1000
+
+π_list0 = [0.5; 0.3; 0.2]
+
+state_list0 = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(-4, 1) CTHMM.NormalExpert(6, 2);
+        CTHMM.VonMisesExpert(0, 10) CTHMM.VonMisesExpert(3, 5) CTHMM.VonMisesExpert(-2, 5)]
+
+Random.seed!(1234)
+df_sim = sim_dataset(Q_mat0, π_list0, state_list0, 500)
+
+Q_mat_init = [-0.2 0.1 0.1;
+        0.2 -0.4 0.2;
+        0.3 0.3 -0.6]
+
+π_list_init = [0.3; 0.3; 0.4]
+
+state_list_init = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2);
+        CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(0, 2)]
+
+(Q_mat_fit = [-9.376400293353417e-5 2.1016226052475204e-5 7.274777688105895e-5; 0.0001718887587601573 -0.0010414888289368505 0.000869600070176693; 0.0009446503575539195 0.001186455322190835 -0.0021311056797447547], π_list_fit = [0.5039977391897151, 0.29199996230907804, 0.2040022985012069], state_list_fit = Main.CTHMM.AnyExpert{Main.CTHMM.RealValued, Main.CTHMM.NonZI, Distribution{Univariate, Continuous}}[Main.CTHMM.NormalExpert{Float64}(-0.005089558791509698, 2.014109313324284) Main.CTHMM.NormalExpert{Float64}(-3.9896058490388984, 0.9944098960670308) Main.CTHMM.NormalExpert{Float64}(5.968243662811661, 2.008764973756351); Main.CTHMM.VonMisesExpert{Float64}(0.0014014033713259876, 10.1) Main.CTHMM.VonMisesExpert{Float64}(3.0023582291078705, 4.955882) Main.CTHMM.VonMisesExpert{Float64}(-2.004835789744674, 4.883333)], converge = true, iter = 24, ll = -110486.23212462381)
+
+
+
+Q_mat0 = [-0.1 0.02 0.08;
+        0.2 -1 0.8;
+        0.8 1.2 -2] ./ 1000
+
+π_list0 = [0.5; 0.3; 0.2]
+
+state_list0 = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(-4, 1) CTHMM.NormalExpert(6, 2);
+        CTHMM.VonMisesExpert(0, 10) CTHMM.VonMisesExpert(3, 5) CTHMM.VonMisesExpert(-2, 5);
+        CTHMM.LaplaceExpert(0, 5) CTHMM.LaplaceExpert(-4, 4) CTHMM.LaplaceExpert(6, 3)]
+
+Random.seed!(1234)
+df_sim = sim_dataset(Q_mat0, π_list0, state_list0, 500)
+
+Q_mat_init = [-0.2 0.1 0.1;
+        0.2 -0.4 0.2;
+        0.3 0.3 -0.6]
+
+π_list_init = [0.3; 0.3; 0.4]
+
+state_list_init = [CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2) CTHMM.NormalExpert(0, 2);
+        CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(0, 2) CTHMM.VonMisesExpert(0, 2);
+        CTHMM.LaplaceExpert(0, 2) CTHMM.LaplaceExpert(0, 2) CTHMM.LaplaceExpert(0, 2)]
+
+(Q_mat_fit = [-9.822149017124873e-5 2.687553225767351e-5 7.134595791357523e-5; 0.00023758449527890653 -0.0010951594811971848 0.0008575749859182784; 0.0007207318905541952 0.0013491353292824975 -0.002069867219836693], π_list_fit = [0.45600032239499483, 0.31399885873632954, 0.23000081886867565], state_list_fit = Main.CTHMM.AnyExpert{Main.CTHMM.RealValued, Main.CTHMM.NonZI, Distribution{Univariate, Continuous}}[Main.CTHMM.NormalExpert{Float64}(-0.03323621102020753, 1.9936847341292059) Main.CTHMM.NormalExpert{Float64}(-3.996665174186664, 1.015230808532701) Main.CTHMM.NormalExpert{Float64}(5.9942378632793725, 2.0356583631685914); Main.CTHMM.VonMisesExpert{Float64}(-0.0017065712941838822, 10.2) Main.CTHMM.VonMisesExpert{Float64}(2.994051088127063, 4.91625) Main.CTHMM.VonMisesExpert{Float64}(-2.006179163305126, 4.857812); Main.CTHMM.LaplaceExpert{Float64}(0.0099230151116465, 5.0001819356035915) Main.CTHMM.LaplaceExpert{Float64}(-4.009607050662573, 3.958988898619755) Main.CTHMM.LaplaceExpert{Float64}(6.020227645161862, 2.9753336786212814)], converge = true, iter = 20, ll = -251304.7911054305)
