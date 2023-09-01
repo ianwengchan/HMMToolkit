@@ -178,9 +178,7 @@ function EM_M_expert_exact(d::VonMisesExpert,
     μ_new = atan(sum(term_zkz_sin_Y)[1] / sum(term_zkz_cos_Y)[1])
     term_zkz_cos_Y_minus_μ = (z_e_obs .* cos.(Y_e_obs .- μ_new))
 
-    #denominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]    
     denominator = sum(term_zkz)[1]
-    # numerator = sum(term_zkz_cos_Y_minus_μ)[1]
     numerator = if penalty
         (
             ((pen_params_jk[1] - 1)./ invA_table.x) .- pen_params_jk[2] .+ sum(term_zkz_cos_Y_minus_μ)[1]
@@ -192,6 +190,17 @@ function EM_M_expert_exact(d::VonMisesExpert,
     end
     tmp = CTHMM.invA(numerator ./ denominator)
     κ_new = maximum([0.0, tmp])
+    # shifting μ does not affect the estimation of κ in the current iteration
+    
+    μ_tmp = μ_new
+    current_ll = sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new, κ_new), ye) .* z_e_obs)
+
+    if (-π <= (μ_new - π) <= π) && (sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new - π, κ_new), ye) .* z_e_obs) >= current_ll)
+        μ_tmp = μ_new - π
+    elseif (-π <= (μ_new + π) <= π) && (sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new + π, κ_new), ye) .* z_e_obs) >= current_ll)
+        μ_tmp = μ_new + π
+    end
+    μ_new = μ_tmp
 
     println("μ $(μ_new), tmp $(tmp), κ $(κ_new)")
 
