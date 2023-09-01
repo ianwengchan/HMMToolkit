@@ -137,7 +137,7 @@ function EM_M_expert_exact(d::LaplaceExpert,
     denominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)) : sum(term_zkz)[1]
     numerator = penalty ? (sum(term_zkz_Y_minus_μ_abs)[1] + pen_pararms_jk[2]) : sum(term_zkz_Y_minus_μ_abs)[1]
     tmp = numerator / denominator
-    θ_new = sqrt(maximum([0.0, tmp]))
+    θ_new = maximum([0.0, tmp])
 
     return LaplaceExpert(μ_new, θ_new)
 end
