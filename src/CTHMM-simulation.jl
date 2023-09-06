@@ -44,3 +44,23 @@ function sim_dataset(Q_mat, π_list, state_list, num_time_series)
 
     return df_sim
 end
+
+function sim_dataset_Qn(α, driver_df, covariate_list, π_list, state_list, num_time_series)
+    num_state = size(π_list, 1)
+    num_driver = nrow(driver_df)
+    
+    Qn = CTHMM.build_cov_Q(num_state, α, hcat(driver_df[1, covariate_list]...))
+    df_sim = sim_dataset(Qn, π_list, state_list, num_time_series)
+    df_sim.driver_ID .= driver_df.driver_ID[1]
+
+    for n = 2:num_driver
+
+        Qn = CTHMM.build_cov_Q(num_state, α, hcat(driver_df[n, covariate_list]...))
+        df_n = sim_dataset(Qn, π_list, state_list, num_time_series)
+        df_n.driver_ID .= driver_df.driver_ID[n]
+        df_sim = vcat(df_sim, df_n)
+    
+    end
+
+    return df_sim
+end

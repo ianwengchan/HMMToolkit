@@ -178,6 +178,7 @@ include("expert.jl")
 # include("paramsinit.jl")
 # include("fit.jl")
 include("em.jl")
+include("CTHMM-build-cov-Q.jl")
 
 # include("simulation.jl")
 # include("predict.jl")
