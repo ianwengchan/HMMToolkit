@@ -30,7 +30,7 @@ fitted = CTHMM_learn_EM_Q_only(df_sim, ["response1", "response2"], Q_mat_init, �
 fitted
 
 ########################################################################
-# 3 states, 2 dimensions, NormalExperts and VonMisesExperts
+# 3 states, 2 dimensions, NormalExperts and VonMisesExperts(old version with 'sqrt()')
 # π_list0 | fitted.π_list_fit
 # 0.5       |  0.526083
 # 0.3       |  0.307575
@@ -76,7 +76,7 @@ fitted = CTHMM_learn_EM_Q_only(df_sim, ["response1"], Q_mat_init, π_list_init, 
 fitted
 
 ########################################################################
-# 3 states, 1 dimension, NormalExperts and VonMisesExperts
+# 3 states, 1 dimension, NormalExperts
 # π_list0 | fitted.π_list_fit
 # 0.5                                |  0.539808
 # 0.3                                |  0.287073
@@ -141,7 +141,7 @@ fitted
 ########################################################################
 
 
-## 4 states, 2 dimensions
+## 4 states, 2 dimensions(didn't converge)
 
 # true parameters
 Q_mat0 = [-1.5 0.5 0.5 0.5;
@@ -175,7 +175,7 @@ fitted = CTHMM_learn_EM_Q_only(df_sim, ["response1", "response2"], Q_mat_init, �
 fitted
 
 ########################################################################
-# 4 states, 2 dimensions, NormalExperts and VonMisesExperts
+# 4 states, 2 dimensions, NormalExperts
 # π_list0 | fitted.π_list_fit
 # 0.5                               |  0.49557
 # 0.25                              |  0.171033
