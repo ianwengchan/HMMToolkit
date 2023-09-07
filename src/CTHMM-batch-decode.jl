@@ -1,3 +1,4 @@
+# VERSION 1: NO COVARIATES
 function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
 
     cur_all_subject_prob = 0.0
@@ -71,15 +72,7 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
     cur_all_subject_prob = 0.0
 
     ## precomputation
-    # time_interval_list = df.time_interval
-    # distinct_time_list = CTHMM_precompute_distinct_time_list(time_interval_list)
     obs_seq_emiss_list = CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list)
-
-    # num_distinct_time = size(distinct_time_list, 1) # from all time series
-    # num_state = size(Q_mat, 1)
-
-    # ## soft count table C(delta, k, l), denoted Etij, to be accumulated from Evij
-    # Etij = zeros(num_distinct_time, num_state, num_state)
 
     group_df = groupby(df, :ID)
     num_time_series = size(group_df, 1)
@@ -87,8 +80,6 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
     for g = 1:num_time_series
 
         seq_df = group_df[g]
-        # len_time_series = nrow(seq_df)
-        # seq_time_interval_list = collect(skipmissing(seq_df.time_interval))
 
         ## compute forward backward algorithm, remember Et[i,j] parameter: prob at the end-states at time t
         if (soft_decode == 1) # soft decoding
@@ -105,6 +96,56 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
         cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
         
     end # g
+
+    return cur_all_subject_prob
+    
+end
+
+
+
+
+# VERSION 2: WITH COVARIATES, using the no covariate functions
+function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+
+    ## precomputation
+    num_state = size(π_list, 1)
+
+    group_df = groupby(df, :subject_ID)
+    num_subject = size(group_df, 1)
+    Etij = Array{Any}(undef, num_subject)   # store Etij for each subject, i.e. a specific covariate combination
+    # note that the length of t depends on the subject
+
+    cur_all_subject_prob = 0.0
+    for n = 1:num_subject
+        df_n = group_df[n]
+        Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
+        subject_log_prob, Etij[n] = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
+        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+    end
+
+    return cur_all_subject_prob, Etij
+    
+end
+
+
+function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+
+    # batch decoding and compute loglikelihood ONLY
+    # WITHOUT producing Etij matrix NOR updating Svi
+
+    ## precomputation
+    num_state = size(π_list, 1)
+
+    group_df = groupby(df, :subject_ID)
+    num_subject = size(group_df, 1)
+
+    cur_all_subject_prob = 0.0
+    for n = 1:num_subject
+        df_n = group_df[n]
+        Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
+        subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
+        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+    end
 
     return cur_all_subject_prob
     
