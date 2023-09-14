@@ -1,5 +1,5 @@
 function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_init;
-    ϵ = 1e-03, max_iter = 200, Q_max_iter = 5, soft_decode = 1, print_steps = 1)
+    ϵ = 1e-03, max_iter = 200, Q_max_iter = 5, soft_decode = 1, print_steps = 1, penalty = true)
 
     ## precomputation before iteration
     # only once in the whole EM:
@@ -69,7 +69,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
             for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=false)
+                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty)
                 # Svi has not been changed since E-step
             end
             ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
@@ -81,23 +81,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
                 )
             end
             ll_em_temp = ll_em
-        end  
-        
-        # ## check if reached a fixed point
-        # [is_termindate] = CTHMM_learn_decide_termination[cur_all_subject_prob, pre_all_subject_prob];    
-        # if (is_termindate .== 1)
-        #     str = sprintf("#s/num_iter.txt", out_dir)
-        #     fp = fopen(str, "wt")
-        #     fprintf(fp, "#d\n", model_iter_count)
-        #     fclose(fp)
-        #     if (cur_all_subject_prob .< pre_all_subject_prob)
-        #         Q_mat = pre_Q_mat
-        #     end
-        #     break()
-        # end
-        
-        # ## store current all subject prob
-        # pre_all_subject_prob = cur_all_subject_prob
+        end
         
     end # iter
     

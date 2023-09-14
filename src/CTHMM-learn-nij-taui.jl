@@ -77,3 +77,24 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
 
     return Nij_mat, taui_list
 end
+
+
+
+
+function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_list, distinct_time_list, α, Etij)
+
+    for n = 1:num_subject
+        Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
+        distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list[n], Qn)
+        Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list[n], distinct_time_Pt_list, Qn, Etij[n])
+        for i = 1:num_state
+            subject_df[n, string("tau", i)] = taui_list[i]
+            for j = 1:num_state
+                subject_df[n, string("N", i, j)] = Nij_mat[i, j]
+            end
+        end
+    end
+
+    return subject_df   # stored in subject_df
+
+end
