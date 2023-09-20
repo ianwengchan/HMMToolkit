@@ -1,7 +1,7 @@
 # VERSION 1: NO COVARIATES
 function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
 
-    cur_all_subject_prob = 0.0
+    # cur_all_subject_prob = 0.0
 
     ## precomputation
     time_interval_list = df.time_interval
@@ -11,13 +11,16 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
     num_distinct_time = size(distinct_time_list, 1) # from all time series
     num_state = size(Q_mat, 1)
 
-    ## soft count table C(delta, k, l), denoted Etij, to be accumulated from Evij
-    Etij = zeros(num_distinct_time, num_state, num_state)
+    # ## soft count table C(delta, k, l), denoted Etij, to be accumulated from Evij
+    # Etij = zeros(num_distinct_time, num_state, num_state)
 
     group_df = groupby(df, :ID)
     num_time_series = size(group_df, 1)
 
-    for g = 1:num_time_series
+    cur_all_subject_prob_list = Array{Float64}(undef, num_time_series)
+    Etij_list = Array{Array{Float64, 3}}(undef, num_time_series)
+
+    @threads for g = 1:num_time_series
 
         seq_df = group_df[g]
         len_time_series = nrow(seq_df)
@@ -38,10 +41,15 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
             end
         end
 
-        ## accum all prob from all time series
-        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
+        cur_all_subject_prob_list[g] = subject_log_prob  # log prob from either soft or hard decoding
+
+        # ## accum all prob from all time series
+        # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
     
-        ## group Evij to be Etij        
+        ## soft count table C(delta, k, l), denoted Etij, to be accumulated from Evij
+        Etij = zeros(num_distinct_time, num_state, num_state)
+
+        ## group Evij to be Etij
         for v = 1:(len_time_series-1)
 
             ## find T in distinct_time_list and corresponding t_idx (only one)
@@ -56,10 +64,15 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
                 Etij[t_idx, i, j] = Etij[t_idx, i, j] + 1
             end
         end # v
+
+        Etij_list[g] = Etij
         
     end # g
 
-    return cur_all_subject_prob, Etij
+    cur_all_subject_prob = sum(cur_all_subject_prob_list)
+    Etij_all = sum(Etij_list)
+
+    return cur_all_subject_prob, Etij_all
     
 end
 
@@ -77,7 +90,9 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
     group_df = groupby(df, :ID)
     num_time_series = size(group_df, 1)
 
-    for g = 1:num_time_series
+    cur_all_subject_prob_list = Array{Float64}(undef, num_time_series)
+
+    @threads for g = 1:num_time_series
 
         seq_df = group_df[g]
 
@@ -92,10 +107,14 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
             # DO NOT UPDATE Svi
         end
 
-        ## accum all prob from all time series
-        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
+        # ## accum all prob from all time series
+        # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
+
+        cur_all_subject_prob_list[g] = subject_log_prob # log prob from either soft or hard decoding
         
     end # g
+
+    cur_all_subject_prob = sum(cur_all_subject_prob_list)
 
     return cur_all_subject_prob
     
@@ -112,16 +131,20 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
 
     group_df = groupby(df, :subject_ID)
     num_subject = size(group_df, 1)
+    cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
     Etij = Array{Array{Float64, 3}}(undef, num_subject)   # store Etij for each subject, i.e. a specific covariate combination
     # note that the length of t depends on the subject
 
-    cur_all_subject_prob = 0.0
-    for n = 1:num_subject
+    # cur_all_subject_prob = 0.0
+    @threads for n = 1:num_subject
         df_n = group_df[n]
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
         subject_log_prob, Etij[n] = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
-        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+        # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+        cur_all_subject_prob_list[n] = subject_log_prob
     end
+
+    cur_all_subject_prob = sum(cur_all_subject_prob_list)
 
     return cur_all_subject_prob, Etij
     
@@ -138,14 +161,18 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
 
     group_df = groupby(df, :subject_ID)
     num_subject = size(group_df, 1)
+    cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
 
-    cur_all_subject_prob = 0.0
+    # cur_all_subject_prob = 0.0
     for n = 1:num_subject
         df_n = group_df[n]
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
         subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
-        cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+        # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
+        cur_all_subject_prob_list[n] = subject_log_prob
     end
+
+    cur_all_subject_prob = sum(cur_all_subject_prob_list)
 
     return cur_all_subject_prob
     

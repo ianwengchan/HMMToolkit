@@ -9,7 +9,7 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
 
     obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
     
-    for g = 1:num_time_series   # number of time series to consider, e.g. trips
+    @threads for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
         len_time_series = nrow(group_df[g])
         # observations can be missing, e.g. speed is available starting 1st timepoint
@@ -52,7 +52,7 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
 
     obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
     
-    for g = 1:num_time_series   # number of time series to consider, e.g. trips
+    @threads for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
         len_time_series = nrow(group_df[g])
         # observations can be missing, e.g. speed is available starting 1st timepoint

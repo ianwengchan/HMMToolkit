@@ -1,6 +1,6 @@
 function build_cov_Q(num_state, α, X; check_args = true)
     # size(α, 2) is the number of covariates C, including the intercept
-    # X is a 1 by C matrix holding the a specific covariate combination
+    # X is a 1 by C matrix holding a specific covariate combination
     check_args && @check_args(build_cov_Q, size(α, 1) == num_state*(num_state - 1))
     Q = zeros(num_state, num_state)
     ax = X * α'

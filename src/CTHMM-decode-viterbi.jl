@@ -19,7 +19,7 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
 
     ## precomputing of Pt for every visit
     log_Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
-    for v = 1:(len_time_series-1)
+    @threads for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         log_Pt_list[v] = log.(distinct_time_Pt_list[t_idx])

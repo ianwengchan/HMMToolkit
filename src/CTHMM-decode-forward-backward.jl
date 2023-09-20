@@ -21,7 +21,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
 
     ## precomputing of Pt for every timepoint
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
-    for v = 1:(len_time_series-1)
+    @threads for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
@@ -69,7 +69,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
     ## compute Evij, two-slice marginal
     Evij = zeros((len_time_series-1), num_state, num_state)
 
-    for v = 1:(len_time_series-1)
+    @threads for v = 1:(len_time_series-1)
 
         for i = 1:num_state
             Evij[v, i, :] = ALPHA[v, i] * Pt_list[v][i, :] .* data_emiss_prob_list[v+1, :] .* BETA[v+1, :]
@@ -109,7 +109,7 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
 
     ## precomputing of Pt for every timepoint
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
-    for v = 1:(len_time_series-1)
+    @threads for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
@@ -157,7 +157,7 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
     ## obs_seq_emiss_list[g][2] # log_data_emiss_prob_list
 
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
-    for v = 1:(len_time_series-1)
+    @threads for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
