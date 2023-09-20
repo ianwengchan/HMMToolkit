@@ -112,7 +112,7 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
 
     group_df = groupby(df, :subject_ID)
     num_subject = size(group_df, 1)
-    Etij = Array{Any}(undef, num_subject)   # store Etij for each subject, i.e. a specific covariate combination
+    Etij = Array{Matrix{Float64}}(undef, num_subject)   # store Etij for each subject, i.e. a specific covariate combination
     # note that the length of t depends on the subject
 
     cur_all_subject_prob = 0.0

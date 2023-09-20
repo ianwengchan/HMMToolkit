@@ -7,7 +7,7 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
     num_state = size(state_list, 2) # follow the expert distribution list format of LRMoE
     num_dim = size(state_list, 1)
 
-    obs_seq_emiss_list = Array{Any}(undef, num_time_series)
+    obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
     
     for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
@@ -16,7 +16,7 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
         # acceleration and radian are available starting 2nd timepoint
         # but change in radian is available only starting 3rd timepoint
 
-        obs_seq_emiss_list[g] = Array{Any}(undef, 2)
+        obs_seq_emiss_list[g] = Array{Matrix{Float64}}(undef, 2)
         obs_seq_emiss_list[g][1] = zeros(len_time_series, num_state)  # data_emiss_prob_list
     
         ## compute emission probabilities for each dimension of observations for each state
@@ -50,7 +50,7 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
     num_state = size(state_list, 2) # follow the expert distribution list format of LRMoE
     num_dim = size(state_list, 1)
 
-    obs_seq_emiss_list = Array{Any}(undef, num_time_series)
+    obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
     
     for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
@@ -59,7 +59,7 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
         # acceleration and radian are available starting 2nd timepoint
         # but change in radian is available only starting 3rd timepoint
 
-        obs_seq_emiss_list[g] = Array{Any}(undef, 2)
+        obs_seq_emiss_list[g] = Array{Matrix{Float64}}(undef, 2)
         obs_seq_emiss_list[g][2] = zeros(len_time_series, num_state)  # log_data_emiss_prob_list
     
         ## compute emission probabilities for each dimension of observations for each state

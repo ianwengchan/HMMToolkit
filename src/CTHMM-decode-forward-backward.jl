@@ -20,7 +20,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
     C = zeros(len_time_series, 1) # rescaling factor
 
     ## precomputing of Pt for every timepoint
-    Pt_list = Array{Any}(undef, (len_time_series-1))
+    Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
@@ -108,7 +108,7 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
     C = zeros(len_time_series, 1) # rescaling factor
 
     ## precomputing of Pt for every timepoint
-    Pt_list = Array{Any}(undef, (len_time_series-1))
+    Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
@@ -156,7 +156,7 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
     ## obs_seq_emiss_list[g][1] # data_emiss_prob_list
     ## obs_seq_emiss_list[g][2] # log_data_emiss_prob_list
 
-    Pt_list = Array{Any}(undef, (len_time_series-1))
+    Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     for v = 1:(len_time_series-1)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)

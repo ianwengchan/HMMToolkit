@@ -11,7 +11,7 @@ end
 function CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)  # tested
 
     num_distinct_time = size(distinct_time_list, 1)
-    distinct_time_Pt_list = Array{Any}(undef, num_distinct_time)
+    distinct_time_Pt_list = Array{Matrix{Float64}}(undef, num_distinct_time)
 
     # for each distinct time
     for t_idx = 1:num_distinct_time
@@ -29,7 +29,7 @@ end
 function CTHMM_precompute_distinct_time_log_Pt_list(distinct_time_list, Q_mat)  # tested
 
     num_distinct_time = size(distinct_time_list, 1)
-    distinct_time_log_Pt_list = Array{Any}(undef, num_distinct_time)
+    distinct_time_log_Pt_list = Array{Matrix{Float64}}(undef, num_distinct_time)
 
     # for each distinct time
     for t_idx = 1:num_distinct_time
