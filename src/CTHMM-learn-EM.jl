@@ -24,7 +24,7 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
-        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+        ll_em_temp, Etij = CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         
         ## M-step, with last estimated parameters
         ## part 1a: learning initial state probabilities π_list
@@ -119,7 +119,7 @@ function CTHMM_learn_EM_Q_only(df, response_list, Q_mat_init, π_list_init, stat
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
-        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+        ll_em_temp, Etij = CTHMM_batch_decode_Etij_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         
         ## M-step, with last estimated parameters
         ## part 1a: learning initial state probabilities π_list
@@ -197,7 +197,7 @@ function CTHMM_learn_EM_expert_only(df, response_list, Q_mat_init, π_list_init,
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
-        ll_em_temp, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+        ll_em_temp, Etij = CTHMM_batch_decode_Etij_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
         
         # ## M-step, with last estimated parameters
         ## part 2: learning state dependent distribution parameters
