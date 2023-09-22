@@ -25,5 +25,6 @@ Pkg.add("Bessels")
 Pkg.add("Random")
 Pkg.add("StatsPlots")
 Pkg.add("LogExpFunctions")
+Pkg.add("Logging")
 
 include(srcdir("CTHMM.jl"))
