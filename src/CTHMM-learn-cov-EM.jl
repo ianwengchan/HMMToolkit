@@ -78,7 +78,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                         k = k + 1
                         y = log.(subject_df[!, string("N", i, j)] ./ tau)
                         α[k, :] = GLM.coef(GLM.lm(X, y))
-                        println(α)
+                        # println(α)
                     end
                 end
             end
@@ -103,6 +103,9 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
             if (print_steps > 0) & (iter % print_steps == 0)
                 @info(
                     "Iteration $(iter) sub $(α_iter), updating α: $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
+                )
+                @info(
+                    "New α: $(α)"
                 )
             end
             ll_em_temp = ll_em
