@@ -2,11 +2,11 @@ using DrWatson
 @quickactivate "FitHMM-jl"
 
 include(srcdir("CTHMM.jl"))
-using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, CategoricalArrays, GLM, QuasiGLM, Random, Base.Threads
+using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, CategoricalArrays, GLM, QuasiGLM, Random, Base.Threads, Logging, JLD2
 using .CTHMM
 
-include(srcdir("fitting-utils.jl"))
-using .fit_jl
+# include(srcdir("fitting-utils.jl"))
+# using .fit_jl
 
 # include(srcdir("CTHMM-precompute-distinct-time.jl"))
 # include(srcdir("CTHMM-precompute.jl"))
@@ -49,6 +49,24 @@ save_name = datadir("cov-2s-3cov")
 
 # CTHMM_learn_cov_EM(df_sim, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init; 
 #     max_iter = 2000, α_max_iter = 5, penalty = false)
+
+function fit_CTHMM_covariate_model(df, response_list, subject_df, covariate_list, α, π_list, state_list, save_name; kwargs...)
+    # log_name = "model"*"$(i)"*".txt"
+    io = open("$(save_name)" * ".txt", "w+")
+    logger = ConsoleLogger(io)
+    with_logger(logger) do
+        @info(now())
+        @info("Fitting $(save_name) started.")
+        try
+            result = CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α, π_list, state_list; kwargs...)
+            @save "$(save_name)" * ".JLD2" result
+        catch
+        end
+        @info(now())
+        @info("Fitting $(save_name) ended.")
+    end
+    return close(io)
+end
 
 fit_CTHMM_covariate_model(df_sim, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init, save_name; 
     max_iter = 2000, α_max_iter = 5, penalty = false)
