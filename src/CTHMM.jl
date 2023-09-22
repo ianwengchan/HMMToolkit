@@ -164,6 +164,36 @@ import DataFrames: DataFrame
 #     predict_VaRCTE_prior,
 #     predict_VaRCTE_posterior
 
+export
+    # precompute
+    CTHMM_precompute_distinct_time_list,
+    CTHMM_precompute_distinct_time_Pt_list,
+    CTHMM_precompute_distinct_time_log_Pt_list,
+    CTHMM_precompute_batch_data_emission_prob,
+    CTHMM_precompute_batch_data_emission_log_prob,
+    # decode
+    CTHMM_decode_forward_backward,
+    CTHMM_likelihood_forward,
+    CTHMM_likelihood_true,
+    CTHMM_decode_viterbi,
+    CTHMM_batch_decode_Etij_for_subjects,
+    CTHMM_batch_decode_Etij_and_append_Svi_for_subjects,
+    CTHMM_batch_decode_for_subjects,
+    CTHMM_batch_decode_Etij_for_cov_subjects,
+    CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects,
+    CTHMM_batch_decode_for_cov_subjects,
+    # learning
+    CTHMM_learn_nij_taui,
+    CTHMM_learn_cov_nij_taui,
+    CTHMM_learn_update_Q_mat,
+    CTHMM_learn_EM,
+    CTHMM_learn_cov_EM,
+    # simulation
+    sim_time_series,
+    sim_dataset,
+    sim_dataset_Qn
+
+
 ### source files
 
 include("utils.jl")
@@ -180,16 +210,16 @@ include("expert.jl")
 include("em.jl")
 include("CTHMM-build-cov-Q.jl")
 
-include("CTHMM-precompute-distinct-time.jl")
-include("CTHMM-precompute.jl")
-include("CTHMM-decode-forward-backward.jl")
-include("CTHMM-decode-viterbi.jl")
-include("CTHMM-batch-decode.jl")
-include("CTHMM-learn-nij-taui.jl")
-include("CTHMM-learn-Q.jl")
-include("CTHMM-learn-EM.jl")
-include("CTHMM-simulation.jl")
-include("CTHMM-learn-cov-EM.jl")
+# include("CTHMM-precompute-distinct-time.jl")
+# include("CTHMM-precompute.jl")
+# include("CTHMM-decode-forward-backward.jl")
+# include("CTHMM-decode-viterbi.jl")
+# include("CTHMM-batch-decode.jl")
+# include("CTHMM-learn-nij-taui.jl")
+# include("CTHMM-learn-Q.jl")
+# include("CTHMM-learn-EM.jl")
+# include("CTHMM-simulation.jl")
+# include("CTHMM-learn-cov-EM.jl")
 
 # include("simulation.jl")
 # include("predict.jl")

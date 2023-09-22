@@ -17,7 +17,7 @@ function fit_CTHMM_covariate_model(df, response_list, subject_df, covariate_list
         @info(now())
         @info("Fitting $(save_name) started.")
         try
-            result = CTHMM.CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α, π_list, state_list; kwargs...)
+            result = CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α, π_list, state_list; kwargs...)
             @save "$(save_name)" * ".JLD2" result
         catch
         end

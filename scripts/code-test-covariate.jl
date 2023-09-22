@@ -8,16 +8,16 @@ using .CTHMM
 include(srcdir("fitting-utils.jl"))
 using .fit_jl
 
-include(srcdir("CTHMM-precompute-distinct-time.jl"))
-include(srcdir("CTHMM-precompute.jl"))
-include(srcdir("CTHMM-decode-forward-backward.jl"))
-include(srcdir("CTHMM-decode-viterbi.jl"))
-include(srcdir("CTHMM-batch-decode.jl"))
-include(srcdir("CTHMM-learn-nij-taui.jl"))
-include(srcdir("CTHMM-learn-Q.jl"))
-include(srcdir("CTHMM-learn-EM.jl"))
-include(srcdir("CTHMM-simulation.jl"))
-include(srcdir("CTHMM-learn-cov-EM.jl"))
+# include(srcdir("CTHMM-precompute-distinct-time.jl"))
+# include(srcdir("CTHMM-precompute.jl"))
+# include(srcdir("CTHMM-decode-forward-backward.jl"))
+# include(srcdir("CTHMM-decode-viterbi.jl"))
+# include(srcdir("CTHMM-batch-decode.jl"))
+# include(srcdir("CTHMM-learn-nij-taui.jl"))
+# include(srcdir("CTHMM-learn-Q.jl"))
+# include(srcdir("CTHMM-learn-EM.jl"))
+# include(srcdir("CTHMM-simulation.jl"))
+# include(srcdir("CTHMM-learn-cov-EM.jl"))
 # include(srcdir("CTHMM-build-cov-Q.jl"))   # imported in CTHMM.jl to use @check_args; call CTHMM.build_cov_Q instead
 
 num_subject = 100
@@ -37,7 +37,7 @@ state_list_true = [CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(-3, 2)]
 response_list = ["response1"]
 
 Random.seed!(1234)
-df_sim = sim_dataset_Qn(α_true, subject_df, covariate_list, π_list_true, state_list_true, num_time_series)
+df_sim = CTHMM.sim_dataset_Qn(α_true, subject_df, covariate_list, π_list_true, state_list_true, num_time_series)
 
 
 α_init = [0.26 0.7 0.2; 0.0 0.0 0.0]
