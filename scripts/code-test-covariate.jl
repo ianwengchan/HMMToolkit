@@ -37,7 +37,7 @@ state_list_true = [CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(-3, 2)]
 response_list = ["response1"]
 
 Random.seed!(1234)
-df_sim = CTHMM.sim_dataset_Qn(α_true, subject_df, covariate_list, π_list_true, state_list_true, num_time_series)
+df_sim = sim_dataset_Qn(α_true, subject_df, covariate_list, π_list_true, state_list_true, num_time_series)
 
 
 α_init = [0.26 0.7 0.2; 0.0 0.0 0.0]
