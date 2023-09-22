@@ -24,3 +24,5 @@ function fit_CTHMM_covariate_model(df, response_list, subject_df, covariate_list
     end
     return close(io)
 end
+
+end # module
