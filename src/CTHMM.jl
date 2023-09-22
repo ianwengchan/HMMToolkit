@@ -62,6 +62,8 @@ import Bessels: besseli0, besseli1
 using DataFrames
 import DataFrames: DataFrame
 
+using GLM
+
 # export
 #     ## generic types
 #     # convert,
