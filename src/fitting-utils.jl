@@ -1,5 +1,7 @@
 module fit_jl
 
+using DrWatson
+
 include(srcdir("CTHMM.jl"))
 using .CTHMM
 using Logging, Dates, JLD2
