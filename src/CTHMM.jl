@@ -190,6 +190,7 @@ export
     CTHMM_learn_update_Q_mat,
     CTHMM_learn_EM,
     CTHMM_learn_cov_EM,
+    CTHMM_learn_cov_EM_alt,
     # simulation
     sim_time_series,
     sim_dataset,
@@ -222,6 +223,7 @@ include("CTHMM-learn-Q.jl")
 include("CTHMM-learn-EM.jl")
 include("CTHMM-simulation.jl")
 include("CTHMM-learn-cov-EM.jl")
+include("CTHMM-learn-cov-EM-alt.jl")
 
 # include("simulation.jl")
 # include("predict.jl")
