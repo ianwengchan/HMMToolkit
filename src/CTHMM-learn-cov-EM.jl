@@ -69,33 +69,33 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
             # have to find Nij_mat and taui_list for each subject
             subject_df = CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_list, distinct_time_list, α, Etij_list)
 
+            # k = 0
+            # for i in 1:(num_state-1)    # fill by row
+            #     tau = subject_df[!, string("tau", i)]
+            #     # w = coalesce.(tau, 0.0)
+            #     for j in 1:num_state
+            #         if i != j
+            #             k = k + 1
+            #             y = log.(subject_df[!, string("N", i, j)] ./ tau)
+            #             α[k, :] = GLM.coef(GLM.lm(X, y))
+            #             # println(α)
+            #         end
+            #     end
+            # end
+
             k = 0
             for i in 1:(num_state-1)    # fill by row
                 tau = subject_df[!, string("tau", i)]
-                # w = coalesce.(tau, 0.0)
+                w = coalesce.(tau, 0.0)
                 for j in 1:num_state
                     if i != j
                         k = k + 1
-                        y = log.(subject_df[!, string("N", i, j)] ./ tau)
-                        α[k, :] = GLM.coef(GLM.lm(X, y))
+                        y = subject_df[!, string("N", i, j)] ./ tau
+                        α[k, :] = coef(glm(X, y, Gamma(), LogLink(), wts = w))
                         # println(α)
                     end
                 end
             end
-
-            # k = 0
-            # for i in 1:(num_state-1)    # fill by row
-            #     tau = subject_df[!, string("tau", i)]
-            #     w = coalesce.(tau, 0.0)
-            #     for j in 1:num_state
-            #         if i != j
-            #             k = k + 1
-            #             y = subject_df[!, string("N", i, j)] ./ tau
-            #             α[k, :] = coef(glm(X, y, Gamma(), LogLink(), wts = w))
-            #             println(α)
-            #         end
-            #     end
-            # end
             
             ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
             s = ll_em - ll_em_temp > 0 ? "+" : "-"

@@ -39,7 +39,7 @@ df_sim = sim_dataset_Qn(α_true, subject_df, covariate_list, π_list_true, state
 
 state_list_init = [CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1) CTHMM.NormalExpert(0, 1)]
 
-save_name = datadir("cov-3s-3cov")
+save_name = datadir("cov-3s-3cov-gamma")
 
 # CTHMM_learn_cov_EM(df_sim, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init; 
 #     max_iter = 2000, α_max_iter = 5, penalty = false)
