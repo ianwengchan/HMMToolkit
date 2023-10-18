@@ -1,4 +1,4 @@
-function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ = 1e-08)
+function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ = 0)
 
     # decoding for only one time-series
     # even if i do decoding for all time-series (having the same covariates)
@@ -88,7 +88,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
 end
 
 
-function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ = 1e-08)
+function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ = 0)
 
     # computing the likelihood via soft decoding only needs the forward step
 

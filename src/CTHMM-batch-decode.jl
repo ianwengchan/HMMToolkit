@@ -1,5 +1,5 @@
 # VERSION 1: NO COVARIATES
-function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list; ϵ = 0)
 
     # cur_all_subject_prob = 0.0
 
@@ -30,7 +30,7 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
         ## compute forward backward algorithm, remember Et[i,j] parameter: prob at the end-states at time t
         if (soft_decode == 1) # soft decoding
             data_emiss_prob_list = obs_seq_emiss_list[g][1]
-            Svi, Evij, subject_log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_list)
+            Svi, Evij, subject_log_prob = CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ)
             # for i in 1:num_state
             #     seq_df[:, string("Sv", i)] = Svi[:, i]
             # end
@@ -88,9 +88,9 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
 end
 
 
-function CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+function CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list; ϵ = 0)
 
-    Svi_full, cur_all_subject_prob, Etij_all = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+    Svi_full, cur_all_subject_prob, Etij_all = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list; ϵ)
 
     num_state = size(Q_mat, 1)
     for i in 1:num_state
@@ -102,7 +102,7 @@ function CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, re
 end
 
 
-function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list; ϵ = 0)
 
     # batch decoding and compute loglikelihood ONLY
     # WITHOUT producing Etij matrix NOR updating Svi
@@ -124,7 +124,7 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
         ## compute forward backward algorithm, remember Et[i,j] parameter: prob at the end-states at time t
         if (soft_decode == 1) # soft decoding
             data_emiss_prob_list = obs_seq_emiss_list[g][1]
-            subject_log_prob = CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list)
+            subject_log_prob = CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; ϵ)
             # DO NOT UPDATE Svi
         else
             log_data_emiss_prob_list = obs_seq_emiss_list[g][2]
@@ -149,7 +149,7 @@ end
 
 
 # VERSION 2: WITH COVARIATES, using the no covariate functions
-function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0)
 
     ## precomputation
     num_state = size(π_list, 1)
@@ -165,7 +165,7 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
     @threads for n = 1:num_subject
         df_n = group_df[n]
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
-        Svi, subject_log_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
+        Svi, subject_log_prob, Etij = CTHMM_batch_decode_Etij_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list; ϵ)
         # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
         Svi_list[n] = Svi
         cur_all_subject_prob_list[n] = subject_log_prob
@@ -181,9 +181,9 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
 end
 
 
-function CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+function CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0)
 
-    Svi_full, cur_all_subject_prob, Etij_list = CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+    Svi_full, cur_all_subject_prob, Etij_list = CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ)
 
     num_state = size(π_list, 1)
     for i in 1:num_state
@@ -195,7 +195,7 @@ function CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df
 end
 
 
-function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0)
 
     # batch decoding and compute loglikelihood ONLY
     # WITHOUT producing Etij matrix NOR updating Svi
@@ -211,7 +211,7 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
     for n = 1:num_subject
         df_n = group_df[n]
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
-        subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list)
+        subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list; ϵ)
         # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
         cur_all_subject_prob_list[n] = subject_log_prob
     end
