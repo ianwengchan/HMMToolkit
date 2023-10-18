@@ -26,8 +26,9 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
         for s = 1:num_state
             temp = 1.0
             for d = 1:num_dim
-                temp = temp .* map(x -> ismissing(x) ? 1 : CTHMM.pdf.(state_list[d, s], x), data[:, d])
+                temp = temp .* map(x -> ismissing(x) ? 1 : max(1e-99, CTHMM.pdf.(state_list[d, s], x)), data[:, d])
                 # assume emission probability of missing data = 1
+                # floor the observation pdf
             end
             obs_seq_emiss_list[g][1][:, s] = temp
         end
