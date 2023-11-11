@@ -2,7 +2,7 @@ using DrWatson
 @quickactivate "FitHMM-jl"
 
 include(srcdir("CTHMM.jl"))
-using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2, StatsBase, Bessels, Random, Clustering
+using CSV, DataFrames, Dates, Statistics, LinearAlgebra, Distributions, JLD2, StatsBase, Bessels, Random, Clustering, Base.Threads
 using .CTHMM
 
 include(srcdir("CTHMM-precompute-distinct-time.jl"))
@@ -49,14 +49,18 @@ response_list = ["response1", "response2", "response3"]
 df_train = filter(rows -> rows.ID <= 400, df_sim)
 df_test = filter(rows -> rows.ID > 400, df_sim)
 
-fitted = CTHMM_learn_EM(df_train, response_list, Q_mat_init, π_list_init, state_list_init; max_iter = 1000, Q_max_iter = 5)
+df = df_train
+
+fitted = CTHMM_learn_EM(df_train, response_list, Q_mat_init, π_list_init, state_list_init; max_iter = 200, Q_max_iter = 5)
 
 fitted.Q_mat_fit * 1000
 fitted.π_list_fit
 fitted.state_list_fit
 
 
-CTHMM_batch_decode_Etij_for_subjects(1, df_test, response_list, fitted.Q_mat_fit, fitted.π_list_fit, fitted.state_list_fit)
+# soft-decoding by forward-backward algorithm, 1
+# hard-decoding by Viterbi decoding, 0
+CTHMM_batch_decode_Etij_for_subjects(0, df_test, response_list, fitted.Q_mat_fit, fitted.π_list_fit, fitted.state_list_fit)
 
 result_df = combine(groupby(df_test, :ID)) do sub_df
         prop1 = sum(skipmissing(sub_df.Sv1 .* sub_df.time_interval)) / sum(skipmissing(sub_df.time_interval))
@@ -82,11 +86,14 @@ sum(df_sim.true_state .== 1) / nrow(df_sim)
 sum(df_sim.true_state .== 2) / nrow(df_sim)
 sum(df_sim.true_state .== 3) / nrow(df_sim)
 
+exp(Q_mat0 * 10)
 
-# cmm for parameter initial guess
-kmeans(hcat(df_sim.response1), 1)
 
-histogram(df_sim.response1)
+# # cmm for parameter initial guess
+# kmeans(hcat(df_sim.response1), 1)
+
+# histogram(df_sim.response1)
+
 
 
 

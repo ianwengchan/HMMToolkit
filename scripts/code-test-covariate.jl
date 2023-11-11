@@ -23,7 +23,7 @@ using .CTHMM
 num_subject = 100
 num_time_series = 50
 Random.seed!(1234)
-subject_df = DataFrame(subject_ID = collect(1:1:num_subject),
+subject_df = DataFrame(SubjectId = collect(1:1:num_subject),
                         intercept = 1,
                         covariate1 = rand(Distributions.Uniform(0, 2), num_subject),
                         covariate2 = rand(Distributions.Normal(1, 1), num_subject))
@@ -69,4 +69,7 @@ function fit_CTHMM_covariate_model(df, response_list, subject_df, covariate_list
 end
 
 fit_CTHMM_covariate_model(df_sim, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init, save_name; 
+    max_iter = 2000, α_max_iter = 5, penalty = false)
+
+    CTHMM_learn_cov_EM(df_sim, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init; 
     max_iter = 2000, α_max_iter = 5, penalty = false)

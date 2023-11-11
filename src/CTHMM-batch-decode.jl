@@ -154,7 +154,7 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
     ## precomputation
     num_state = size(π_list, 1)
 
-    group_df = groupby(df, :subject_ID)
+    group_df = groupby(df, :SubjectId)
     num_subject = size(group_df, 1)
     cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
     Etij_list = Array{Array{Float64, 3}}(undef, num_subject)   # store Etij for each subject, i.e. a specific covariate combination
@@ -203,7 +203,7 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
     ## precomputation
     num_state = size(π_list, 1)
 
-    group_df = groupby(df, :subject_ID)
+    group_df = groupby(df, :SubjectId)
     num_subject = size(group_df, 1)
     cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
 

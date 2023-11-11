@@ -6,7 +6,7 @@ function CTHMM_learn_cov_EM_alt(df, response_list, subject_df, covariate_list, Î
     num_state = size(Ï€_list_init, 1)
     num_dim = size(state_list_init, 1)
 
-    group_df = groupby(df, :subject_ID)
+    group_df = groupby(df, :SubjectId)
     num_subject = size(group_df, 1)
     distinct_time_list = Array{Vector{Int64}}(undef, num_subject) # the distinct_time_list depends on the subject
     @threads for n = 1:num_subject

@@ -24,7 +24,7 @@ include(srcdir("CTHMM-learn-cov-EM.jl"))
     0 0 0]
 
 Random.seed!(1234)
-subject_df = DataFrame(subject_ID = collect(1:1:50),
+subject_df = DataFrame(SubjectId = collect(1:1:50),
                         intercept = 1,
                         covariate1 = rand(Distributions.Uniform(0, 2), 50),
                         covariate2 = rand(Distributions.Normal(1, 1), 50))
@@ -57,7 +57,7 @@ fitted = CTHMM_learn_cov_EM(df_sim, response_list, subject_df, covariate_list, �
 α_true = [0.25; 0]
 
 Random.seed!(1234)
-subject_df = DataFrame(subject_ID = 1,
+subject_df = DataFrame(SubjectId = 1,
                         intercept = 1)
 
 # just assume 1 π_list for all drivers for now

@@ -28,7 +28,7 @@ end
 
 df_train = sample_df_by_seed(1234, 150, df_longer)
 
-trip = sample_df_by_seed(1234, 1, df_longer)
+# trip = sample_df_by_seed(1234, 1, df_longer)
 
 density(skipmissing(df_longer.radian))  # 6 modes
 density(skipmissing(df_longer.delta_radian))    # 4 modes: -1.5, 0, 1.5, 3.14??

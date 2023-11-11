@@ -11,7 +11,7 @@ using .CTHMM
 num_subject = 100
 num_time_series = 50
 Random.seed!(1234)
-subject_df = DataFrame(subject_ID = collect(1:1:num_subject),
+subject_df = DataFrame(SubjectId = collect(1:1:num_subject),
                         intercept = 1,
                         covariate1 = rand(Distributions.Uniform(0, 2), num_subject),
                         covariate2 = rand(Distributions.Normal(1, 1), num_subject))
