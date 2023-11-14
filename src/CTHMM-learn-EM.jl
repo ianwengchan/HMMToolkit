@@ -16,8 +16,9 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
     ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
     iter = 0
     
-    while (ll_em - ll_em_old > ϵ) && (iter < max_iter)
-        
+    # while (ll_em - ll_em_old > ϵ) && (iter < max_iter)
+    while (abs(ll_em - ll_em_old) > ϵ) && (iter < max_iter)
+            
         ## add counter
         iter = iter + 1
         ll_em_old = ll_em
@@ -68,10 +69,13 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
+            # params_old = CTHMM.params.(state_list[d, :])
+            params_old = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
             for i in 1:num_state
                 state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty)
                 # Svi has not been changed since E-step
             end
+
             ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
             s = ll_em - ll_em_temp > 0 ? "+" : "-"
             pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
@@ -79,13 +83,21 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
                 @info(
                     "Iteration $(iter), updating dim $(d): $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
                 )
+                if s == "-"
+                    params_new = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
+                    @info(
+                        "Intended update of params: $(params_old) ->  $(params_new)"
+                    )
+                end
             end
             ll_em_temp = ll_em
         end
         
     end # iter
     
-    converge = (ll_em - ll_em_old > ϵ) ? false : true
+    converge = (0 <= ll_em - ll_em_old <= ϵ)
+
+    # converge = (ll_em - ll_em_old > ϵ) ? false : true
 
     return (Q_mat_fit = Q_mat, π_list_fit = π_list, state_list_fit = state_list,
             converge = converge, iter = iter, ll = ll_em)
