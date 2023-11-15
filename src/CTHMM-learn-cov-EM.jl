@@ -83,13 +83,14 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
             #     end
             # end
 
-            k = 0
-            for i in 1:(num_state-1)    # fill by row
+            # k = 0
+            @threads for i in 1:(num_state-1)    # fill by row
                 tau = subject_df[!, string("tau", i)]
                 w = coalesce.(tau, 0.0)
-                for j in 1:num_state
+                @threads for j in 1:num_state
                     if i != j
-                        k = k + 1
+                        # k = k + 1
+                        k = (num_state * i) - (num_state - j)  - (i - (i >= j ? 1 : 0))
                         y = subject_df[!, string("N", i, j)] ./ tau
                         α[k, :] = coef(glm(X, y, Gamma(), LogLink(), wts = w))
                         # println(α)

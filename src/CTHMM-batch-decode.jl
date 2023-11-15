@@ -208,7 +208,7 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
     cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
 
     # cur_all_subject_prob = 0.0
-    for n = 1:num_subject
+    @threads for n = 1:num_subject
         df_n = group_df[n]
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
         subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list; ϵ)

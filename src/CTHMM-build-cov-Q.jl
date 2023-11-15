@@ -6,11 +6,12 @@ function build_cov_Q(num_state, α, X; check_args = true)
     ax = X * α'
     exp_ax = exp.(ax)
 
-    k = 0
+    # k = 0
     for i in 1:num_state    # fill by row    
         for j in 1:num_state
             if i != j
-                k = k + 1
+                # k = k + 1
+                k = (num_state * i) - (num_state - j)  - (i - (i >= j ? 1 : 0))
                 Q[i, j] = exp_ax[k]
             end
         end
