@@ -194,7 +194,7 @@ end
 function EM_M_expert_exact(d::ZIGammaExpert,
     ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[Inf 1.0 Inf])
+    penalty=true, pen_pararms_jk=[1.0 Inf 1.0 Inf])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
