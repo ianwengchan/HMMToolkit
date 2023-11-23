@@ -30,6 +30,7 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
             Ri = Ri + sum(filter(x -> x != Inf, temp))
 
             Ri_list[t_idx] = Ri
+            GC.safepoint()
         end
 
         # tau_i
@@ -41,6 +42,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
         
         ## restore
         A[i, i + num_state] = 0
+
+        GC.safepoint()
         
     end
             
@@ -68,6 +71,7 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                     temp_sum = temp_sum + sum(filter(x -> x != Inf, temp))
 
                     temp_sum_list[t_idx] = temp_sum
+                    GC.safepoint()
                 end
     
                 nij = sum(temp_sum_list) * Q_mat[i, j]
@@ -77,10 +81,16 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                 
                 ## restore
                 A[i, j + num_state] = 0
+
+                GC.safepoint()
                 
             end
+            GC.safepoint()
         end
+        GC.safepoint()
     end
+
+    GC.safepoint()
 
     return Nij_mat, taui_list
 end
@@ -99,6 +109,7 @@ function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_
         Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list[n], distinct_time_Pt_list, Qn, Etij_list[n])
         Nij_list_all[n] = Nij_mat
         taui_list_all[n] = taui_list
+        GC.safepoint()
         # for i = 1:num_state
         #     subject_df[n, string("tau", i)] = taui_list[i]
         #     for j = 1:num_state
@@ -113,6 +124,8 @@ function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_
             subject_df[:, string("N", i, j)] = map(x -> x[i, j], Nij_list_all)
         end
     end
+
+    GC.safepoint()
 
     return subject_df   # stored in subject_df
 

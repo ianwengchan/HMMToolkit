@@ -18,8 +18,11 @@ function CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)  # te
             
         T = distinct_time_list[t_idx]   # t_delta
         distinct_time_Pt_list[t_idx] = exp(Q_mat * T)
+        GC.safepoint()
 
     end
+
+    GC.safepoint()
 
     return distinct_time_Pt_list
         
@@ -36,8 +39,11 @@ function CTHMM_precompute_distinct_time_log_Pt_list(distinct_time_list, Q_mat)  
             
         T = distinct_time_list[t_idx]   # t_delta
         distinct_time_log_Pt_list[t_idx] = log.(exp(Q_mat * T))
+        GC.safepoint()
 
     end
+
+    GC.safepoint()
 
     return distinct_time_log_Pt_list
         

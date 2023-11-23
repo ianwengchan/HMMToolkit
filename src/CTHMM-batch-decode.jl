@@ -46,6 +46,8 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
             end
         end
 
+        GC.safepoint()
+
         Svi_list[g] = Svi
         cur_all_subject_prob_list[g] = subject_log_prob  # log prob from either soft or hard decoding
 
@@ -69,9 +71,13 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
                 j = state_seq[v+1]
                 Etij[t_idx, i, j] = Etij[t_idx, i, j] + 1
             end
+
+            GC.safepoint()
         end # v
 
         Etij_list[g] = Etij
+
+        GC.safepoint()
         
     end # g
 
@@ -96,6 +102,8 @@ function CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, re
     for i in 1:num_state
         df[:, string("Sv", i)] = Svi_full[:, i]
     end
+
+    GC.safepoint()
 
     return cur_all_subject_prob, Etij_all
 
@@ -136,6 +144,8 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
         # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob # log prob from either soft or hard decoding
 
         cur_all_subject_prob_list[g] = subject_log_prob # log prob from either soft or hard decoding
+
+        GC.safepoint()
         
     end # g
 
@@ -170,6 +180,7 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
         Svi_list[n] = Svi
         cur_all_subject_prob_list[n] = subject_log_prob
         Etij_list[n] = Etij
+        GC.safepoint()
     end
 
     cur_all_subject_prob = sum(cur_all_subject_prob_list)
@@ -189,6 +200,8 @@ function CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df
     for i in 1:num_state
         df[:, string("Sv", i)] = Svi_full[:, i]
     end
+
+    GC.safepoint()
 
     return cur_all_subject_prob, Etij_list
 
@@ -214,6 +227,7 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
         subject_log_prob = CTHMM_batch_decode_for_subjects(soft_decode, df_n, response_list, Qn, π_list, state_list; ϵ)
         # cur_all_subject_prob = cur_all_subject_prob + subject_log_prob
         cur_all_subject_prob_list[n] = subject_log_prob
+        GC.safepoint()
     end
 
     cur_all_subject_prob = sum(cur_all_subject_prob_list)

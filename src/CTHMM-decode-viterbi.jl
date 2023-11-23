@@ -23,6 +23,7 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         log_Pt_list[v] = log.(distinct_time_Pt_list[t_idx])
+        GC.safepoint()
     end
 
     ## init T1 and T2 at first timepoint
@@ -37,6 +38,8 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
     if (maximum(log_prob) >= max_log_prob)
         max_log_prob = maximum(log_prob)
     end
+
+    GC.safepoint()
     
     ## for all other timepoints
     for v = 2:len_time_series  
@@ -54,6 +57,8 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
             T2[s, v] = best_k
         end # s
     end # v
+
+    GC.safepoint()
     
     
     ## start backtracking of state sequence
@@ -66,6 +71,8 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
         best_state_seq[v] = T2[best_last_s, v+1]
         best_last_s = best_state_seq[v]
     end
+
+    GC.safepoint()
 
     return best_state_seq, best_log_prob
     

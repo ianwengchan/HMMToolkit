@@ -31,9 +31,12 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
                 # floor the observation pdf
             end
             obs_seq_emiss_list[g][1][:, s] = temp
+            GC.safepoint()
         end
 
         obs_seq_emiss_list[g][2] = log.(obs_seq_emiss_list[g][1])  # log_data_emiss_prob_list
+
+        GC.safepoint()
         
     end
 
@@ -74,9 +77,12 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
                 # assume emission probability of missing data = 1 (log probability = 0)
             end
             obs_seq_emiss_list[g][2][:, s] = temp
+            GC.safepoint()
         end
 
         obs_seq_emiss_list[g][1] = exp.(obs_seq_emiss_list[g][2])  # data_emiss_prob_list
+        
+        GC.safepoint()
         
     end
 

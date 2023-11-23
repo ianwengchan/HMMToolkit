@@ -25,6 +25,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
+        GC.safepoint()
     end
 
     ## init alpha for time 1
@@ -45,6 +46,7 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         ALPHA[v, :] = ALPHA[v, :] .* C[v]
     end # v
 
+    GC.safepoint()
     
     ## compute beta()
     BETA = zeros(len_time_series, num_state)
@@ -63,6 +65,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         BETA[v, :] = BETA[v, :] .* C[v]
     end # v
 
+    GC.safepoint()
+
     ## compute Svi, smoother
     Svi = ALPHA .* BETA ./ C
 
@@ -76,6 +80,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         end
         sum_Evij = sum(Evij[v, :, :])
         Evij[v, :, :] = Evij[v, :, :] ./ sum_Evij
+
+        GC.safepoint()
     
     end
     
@@ -113,6 +119,7 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
+        GC.safepoint()
     end
 
     ## init alpha for time 1
@@ -132,6 +139,8 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
         C[v] = 1.0 / (sum(ALPHA[v, :]) + ϵ)
         ALPHA[v, :] = ALPHA[v, :] .* C[v]
     end # v
+
+    GC.safepoint()
     
     ## check rabinar's paper
     log_prob = 0
@@ -161,6 +170,7 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
         T = time_interval_list[v]
         t_idx = findfirst(x -> x .== T, distinct_time_list)
         Pt_list[v] = distinct_time_Pt_list[t_idx]
+        GC.safepoint()
     end
 
     v = 1
@@ -170,6 +180,8 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
         j = true_state[v]
         log_prob = log_prob + log(Pt_list[v-1][i, j] * data_emiss_prob_list[v, j])
     end
+    
+    GC.safepoint()
 
     return log_prob
     

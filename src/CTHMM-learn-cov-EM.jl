@@ -11,6 +11,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     distinct_time_list = Array{Vector{Int64}}(undef, num_subject) # the distinct_time_list depends on the subject
     @threads for n = 1:num_subject
         distinct_time_list[n] = CTHMM_precompute_distinct_time_list(group_df[n].time_interval)
+        GC.safepoint()
     end
 
     # for i = 1:num_state
@@ -23,6 +24,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     
     # start EM iteration
     α = Base.copy(α_init)
+    X = Matrix(subject_df[!, covariate_list])   # same for all elements of Q and across iterations
+    
     π_list = Base.copy(π_list_init)
     state_list = Base.copy(state_list_init)
     ll_em_old = -Inf
@@ -38,6 +41,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df; need to compute Etij separately for each subject
         ll_em_temp, Etij_list = CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+
+        GC.safepoint()
         
         ## M-step, with last estimated parameters
         ## part 1a: learning initial state probabilities π_list
@@ -59,7 +64,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         ## part 1b: learning α using distinct time grouping
 
         α_old = copy(α) .- Inf
-        X = Matrix(subject_df[!, covariate_list])   # same for all elements of Q and across iterations
+        
 
         α_iter = 0
         while (α_iter < α_max_iter) && (sum((α - α_old) .^ 2) > 1e-10)
@@ -94,8 +99,11 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                         y = subject_df[!, string("N", i, j)] ./ tau
                         α[k, :] = coef(glm(X, y, Gamma(), LogLink(), wts = w))
                         # println(α)
+                        GC.safepoint()
                     end
+                    GC.safepoint()
                 end
+                GC.safepoint()
             end
             
             ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
@@ -111,6 +119,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
             end
             ll_em_temp = ll_em
         end
+
+        GC.safepoint()
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
@@ -135,6 +145,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
             end
             ll_em_temp = ll_em
         end
+
+        GC.safepoint()
         
     end # iter
     

@@ -15,6 +15,8 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
     ll_em_old = -Inf
     ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
     iter = 0
+
+    GC.safepoint()
     
     # while (ll_em - ll_em_old > ϵ) && (iter < max_iter)
     while (abs(ll_em - ll_em_old) > ϵ) && (iter < max_iter)
@@ -26,6 +28,8 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df
         ll_em_temp, Etij = CTHMM_batch_decode_Etij_and_append_Svi_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
+
+        GC.safepoint()
         
         ## M-step, with last estimated parameters
         ## part 1a: learning initial state probabilities π_list
@@ -56,6 +60,8 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
             Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
             Q_mat = CTHMM_learn_update_Q_mat(Nij_mat, taui_list)
 
+            GC.safepoint()
+
             ll_em = CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, π_list, state_list)
             s = ll_em - ll_em_temp > 0 ? "+" : "-"
             pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
@@ -66,6 +72,8 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
             end
             ll_em_temp = ll_em
         end
+
+        GC.safepoint()
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
@@ -92,6 +100,8 @@ function CTHMM_learn_EM(df, response_list, Q_mat_init, π_list_init, state_list_
             end
             ll_em_temp = ll_em
         end
+
+        GC.safepoint()
         
     end # iter
     
