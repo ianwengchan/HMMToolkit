@@ -200,9 +200,9 @@ quantile(d::GammaExpert, p) = quantile(Distributions.Gamma(d.k, d.θ), p)
 # end
 
 function _gamma_k_to_θ(k, sum_term_zkz, sum_term_zkzy;
-    penalty=true, pen_pararms_jk=[1.0 Inf 1.0 Inf])
+    penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
     if penalty
-        hyper1, hyper2 = pen_pararms_jk[3], pen_pararms_jk[4]
+        hyper1, hyper2 = pen_params_jk[3], pen_params_jk[4]
         if hyper1 == 1.0 && hyper2 == Inf
             # return sum(term_zkzy)[1] / (sum(term_zkz)[1] * k)   
             return sum_term_zkzy / (sum_term_zkz * k)
@@ -216,20 +216,20 @@ end
 
 function _gamma_optim_k(logk,
     sum_term_zkz, sum_term_zkzy, sum_term_zkzlogy;
-    penalty=true, pen_pararms_jk=[1.0 Inf 1.0 Inf])
+    penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
     # Optimization in log scale for unconstrained computation    
     k_tmp = exp(logk)
 
     θ_tmp = _gamma_k_to_θ(
-        k_tmp, sum_term_zkz, sum_term_zkzy; penalty=penalty, pen_pararms_jk=pen_pararms_jk
+        k_tmp, sum_term_zkz, sum_term_zkzy; penalty=penalty, pen_params_jk=pen_params_jk
     )
 
     obj =
         (k_tmp - 1) * sum_term_zkzlogy - (1 / θ_tmp) * sum_term_zkzy -
         (k_tmp * log(θ_tmp) + loggamma(k_tmp)) * sum_term_zkz
     p = if penalty
-        (pen_pararms_jk[1] - 1) * log(k_tmp) - k_tmp / pen_pararms_jk[2] +
-        (pen_pararms_jk[3] - 1) * log(θ_tmp) - θ_tmp / pen_pararms_jk[4]
+        (pen_params_jk[1] - 1) * log(k_tmp) - k_tmp / pen_params_jk[2] +
+        (pen_params_jk[3] - 1) * log(θ_tmp) - θ_tmp / pen_params_jk[4]
     else
         0.0
     end
@@ -244,7 +244,7 @@ end
 #     #  expert_tn_pos,
 #     #  expert_tn_bar_pos,
 #     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_pararms_jk=[1.0 Inf 1.0 Inf])
+#     penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
 
 #     # Further E-Step
 #     expert_ll_pos = expert_ll.(d, tl, yl, yu, tu)
@@ -283,7 +283,7 @@ end
 #         Optim.optimize(
 #             x -> _gamma_optim_k(x, sum(term_zkz)[1], sum(term_zkz_Y)[1],
 #                 sum(term_zkz_logY)[1];
-#                 penalty=penalty, pen_pararms_jk=pen_pararms_jk),
+#                 penalty=penalty, pen_params_jk=pen_params_jk),
 #             max(log(d.k) - 2.0, 0.0), log(d.k) + 2.0),
 #     ) # ,
 #     # log(d.k)-2.0, log(d.k)+2.0 )) # ,
@@ -295,7 +295,7 @@ end
 #         sum(term_zkz)[1],
 #         sum(term_zkz_Y)[1];
 #         penalty=penalty,
-#         pen_pararms_jk=pen_pararms_jk,
+#         pen_params_jk=pen_params_jk,
 #     )
 
 #     # println("$k_new, $θ_new")
@@ -306,7 +306,7 @@ end
 function EM_M_expert_exact(d::GammaExpert,
     ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 Inf 1.0 Inf])
+    penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
@@ -329,7 +329,7 @@ function EM_M_expert_exact(d::GammaExpert,
         Optim.optimize(
             x -> _gamma_optim_k(x, sum(term_zkz)[1], sum(term_zkz_Y)[1],
                 sum(term_zkz_logY)[1];
-                penalty=penalty, pen_pararms_jk=pen_pararms_jk),
+                penalty=penalty, pen_params_jk=pen_params_jk),
             max(log(d.k) - 2.0, 0.0), log(d.k) + 2.0),
     )
 
@@ -339,7 +339,7 @@ function EM_M_expert_exact(d::GammaExpert,
         sum(term_zkz)[1],
         sum(term_zkz_Y)[1];
         penalty = penalty,
-        pen_pararms_jk = pen_pararms_jk,
+        pen_params_jk = pen_params_jk,
     )
 
     return GammaExpert(k_new, θ_new)

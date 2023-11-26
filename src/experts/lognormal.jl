@@ -185,7 +185,7 @@ quantile(d::LogNormalExpert, p) = quantile(Distributions.LogNormal(d.μ, d.σ), 
 #     tl, yl, yu, tu,
 #     exposure,
 #     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_pararms_jk=[1.0 1.0])
+#     penalty=true, pen_params_jk=[1.0 1.0])
 
 #     expert_ll_pos = expert_ll.(d, tl, yl, yu, tu)
 #     expert_tn_bar_pos = expert_tn_bar.(d, tl, yl, yu, tu)
@@ -211,11 +211,11 @@ quantile(d::LogNormalExpert, p) = quantile(Distributions.LogNormal(d.μ, d.σ), 
 
 #     μ_new = sum(term_zkz_logY)[1] / sum(term_zkz)[1]
 
-#     demominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]
+#     demominator = penalty ? (sum(term_zkz)[1] + (pen_params_jk[2] - 1)) : sum(term_zkz)[1]
 #     numerator = if penalty
 #         (
 #             sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
-#             (μ_new)^2 * sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)
+#             (μ_new)^2 * sum(term_zkz)[1] + (pen_params_jk[1] - 1)
 #         )
 #     else
 #         (
@@ -233,7 +233,7 @@ quantile(d::LogNormalExpert, p) = quantile(Distributions.LogNormal(d.μ, d.σ), 
 function EM_M_expert_exact(d::LogNormalExpert,
     ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 1.0])
+    penalty=true, pen_params_jk=[1.0 1.0])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
@@ -253,11 +253,11 @@ function EM_M_expert_exact(d::LogNormalExpert,
 
     μ_new = sum(term_zkz_logY)[1] / sum(term_zkz)[1]
 
-    denominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[2] - 1)) : sum(term_zkz)[1]
+    denominator = penalty ? (sum(term_zkz)[1] + (pen_params_jk[2] - 1)) : sum(term_zkz)[1]
     numerator = if penalty
         (
             sum(term_zkz_logY_sq)[1] - 2.0 * μ_new * sum(term_zkz_logY)[1] +
-            (μ_new)^2 * sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)
+            (μ_new)^2 * sum(term_zkz)[1] + (pen_params_jk[1] - 1)
         )
     else
         (

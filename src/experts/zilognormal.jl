@@ -133,7 +133,7 @@ end
 #     tl, yl, yu, tu,
 #     exposure,
 #     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_pararms_jk=[Inf 1.0 Inf])
+#     penalty=true, pen_params_jk=[Inf 1.0 Inf])
 
 #     # Old parameters
 #     p_old = p_zero(d)
@@ -156,7 +156,7 @@ end
 #         tl, yl, yu, tu,
 #         exposure,
 #         z_pos_e_obs, z_pos_e_lat, k_e;
-#         penalty=penalty, pen_pararms_jk=pen_pararms_jk)
+#         penalty=penalty, pen_params_jk=pen_params_jk)
 
 #     return ZILogNormalExpert(p_new, tmp_update.μ, tmp_update.σ)
 # end
@@ -165,7 +165,7 @@ end
 function EM_M_expert_exact(d::ZILogNormalExpert,
     ye, # exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 1.0])
+    penalty=true, pen_params_jk=[1.0 1.0])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
@@ -193,7 +193,7 @@ function EM_M_expert_exact(d::ZILogNormalExpert,
         ye,
         # exposure,
         z_pos_e_obs;
-        penalty=penalty, pen_pararms_jk=pen_pararms_jk)
+        penalty=penalty, pen_params_jk=pen_params_jk)
 
     return ZILogNormalExpert(p_new, tmp_update.μ, tmp_update.σ)
 end

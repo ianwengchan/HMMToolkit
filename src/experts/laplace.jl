@@ -105,7 +105,7 @@ sim_expert(d::LaplaceExpert) = Distributions.rand(Distributions.Laplace(d.μ, d.
 ## penalty
 penalty_init(d::LaplaceExpert) = [2.0 2.0]
 no_penalty_init(d::LaplaceExpert) = [1.0 1.0]
-penalize(d::LaplaceExpert, p) = -0.5 * (p[1] - 1) / (d.θ * d.θ) - (p[2] - 1) * log(d.θ)
+penalize(d::LaplaceExpert, p) = - (p[1] - 1) / d.θ - (p[2] - 1) * log(d.θ)
 
 ## statistics
 mean(d::LaplaceExpert) = mean(Distributions.Laplace(d.μ, d.θ))
@@ -116,7 +116,7 @@ quantile(d::LaplaceExpert, p) = quantile(Distributions.Laplace(d.μ, d.θ), p)
 function EM_M_expert_exact(d::LaplaceExpert,
     ye, #exposure,
     z_e_obs;
-    penalty=true, pen_pararms_jk=[1.0 1.0])
+    penalty=true, pen_params_jk=[1.0 1.0])
 
     # Remove missing values first
     ## turn z_e_obs of missing data to missing as well, to apply skipmissing below
@@ -134,8 +134,8 @@ function EM_M_expert_exact(d::LaplaceExpert,
     μ_new = CTHMM.weighted_median(ye, z_e_obs)
     term_zkz_Y_minus_μ_abs = abs.(Y_e_obs .- μ_new) .* z_e_obs 
 
-    denominator = penalty ? (sum(term_zkz)[1] + (pen_pararms_jk[1] - 1)) : sum(term_zkz)[1]
-    numerator = penalty ? (sum(term_zkz_Y_minus_μ_abs)[1] + pen_pararms_jk[2]) : sum(term_zkz_Y_minus_μ_abs)[1]
+    denominator = penalty ? (sum(term_zkz)[1] + (pen_params_jk[2] - 1)) : sum(term_zkz)[1]
+    numerator = penalty ? (sum(term_zkz_Y_minus_μ_abs)[1] + (pen_params_jk[1] - 1)) : sum(term_zkz_Y_minus_μ_abs)[1]
     tmp = numerator / denominator
     θ_new = maximum([0.0, tmp])
 
