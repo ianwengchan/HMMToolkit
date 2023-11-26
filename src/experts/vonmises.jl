@@ -148,7 +148,7 @@ sim_expert(d::VonMisesExpert) = Distributions.rand(Distributions.VonMises(d.μ, 
 ## penalty
 penalty_init(d::VonMisesExpert) = [2.0 2.0]
 no_penalty_init(d::VonMisesExpert) = [1.0 1.0]
-penalize(d::VonMisesExpert, p) = -0.5 * (p[1] - 1) / (d.κ * d.κ) - (p[2] - 1) * log(d.κ)
+penalize(d::VonMisesExpert, p) = (p[1] - 1) / log(d.κ) - (p[2] - 1) * d.κ
 
 ## statistics
 mean(d::VonMisesExpert) = mean(Distributions.VonMises(d.μ, d.κ))
@@ -181,7 +181,7 @@ function EM_M_expert_exact(d::VonMisesExpert,
     denominator = sum(term_zkz)[1]
     numerator = if penalty
         (
-            ((pen_params_jk[1] - 1)./ invA_table.x) .- pen_params_jk[2] .+ sum(term_zkz_cos_Y_minus_μ)[1]
+            ((pen_params_jk[1] - 1)./ invA_table.x) .- (pen_params_jk[2] - 1) .+ sum(term_zkz_cos_Y_minus_μ)[1]
         )
     else
         (

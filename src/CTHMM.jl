@@ -185,6 +185,7 @@ export
     CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects,
     CTHMM_batch_decode_for_cov_subjects,
     # learning
+    penalty_params,
     CTHMM_learn_nij_taui,
     CTHMM_learn_cov_nij_taui,
     CTHMM_learn_update_Q_mat,
@@ -206,7 +207,7 @@ include("utils.jl")
 # include("gating.jl")
 include("expert.jl")
 # include("loglik.jl")
-# include("penalty.jl")
+include("penalty.jl")
 
 # include("paramsinit.jl")
 # include("fit.jl")
