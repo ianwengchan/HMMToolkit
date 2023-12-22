@@ -43,10 +43,10 @@ function cdf(d::ZILogNormalExpert, x...)
 end
 
 function expert_ll_exact(d::ZILogNormalExpert, x::Real)
-    return (x == 0.0) ? log(p_zero(d)) : log(1 - p_zero(d)) + LRMoE.logpdf(d, x)
+    return (x == 0.0) ? log(p_zero(d)) : log(1 - p_zero(d)) + CTHMM.logpdf(d, x)
 end
 function expert_ll(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-    expert_ll_pos = LRMoE.expert_ll(LRMoE.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
+    expert_ll_pos = CTHMM.expert_ll(CTHMM.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
     # Deal with zero inflation
     p0 = p_zero(d)
     expert_ll = if (yl == 0.0)
@@ -58,7 +58,7 @@ function expert_ll(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     return expert_ll
 end
 # function expert_tn(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_pos = LRMoE.expert_tn(LRMoE.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
+#     expert_tn_pos = CTHMM.expert_tn(CTHMM.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
 #     # Deal with zero inflation
 #     p0 = p_zero(d)
 #     expert_tn = if (tl == 0.0)
@@ -70,7 +70,7 @@ end
 #     return expert_tn
 # end
 # function expert_tn_bar(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar_pos = LRMoE.expert_tn_bar(LRMoE.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
+#     expert_tn_bar_pos = CTHMM.expert_tn_bar(CTHMM.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
 #     # Deal with zero inflation
 #     p0 = p_zero(d)
 #     expert_tn_bar = if (tl > 0.0)
@@ -139,8 +139,8 @@ end
 #     p_old = p_zero(d)
 
 #     # Update zero probability
-#     expert_ll_pos = expert_ll.(LRMoE.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
-#     expert_tn_bar_pos = expert_tn_bar.(LRMoE.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
+#     expert_ll_pos = expert_ll.(CTHMM.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
+#     expert_tn_bar_pos = expert_tn_bar.(CTHMM.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
 
 #     z_zero_e_obs = z_e_obs .* EM_E_z_zero_obs(yl, p_old, expert_ll_pos)
 #     z_pos_e_obs = z_e_obs .- z_zero_e_obs

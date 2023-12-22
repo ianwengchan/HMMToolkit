@@ -175,7 +175,7 @@ end
 """
     cmm_init(Y, X, n_comp, type; exact_Y = false, n_random = 5)
 
-Initialize an LRMoE model using the Clustered Method of Moments (CMM).
+Initialize an CTHMM model using the Clustered Method of Moments (CMM).
 
 # Arguments
 - `Y`: A matrix of response.
