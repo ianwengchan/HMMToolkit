@@ -1,5 +1,5 @@
 function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init;
-    ϵ = 1e-03, max_iter = 200, α_max_iter = 5, soft_decode = 1, print_steps = 1, penalty = true)
+    ϵ = 1e-03, max_iter = 200, α_max_iter = 5, soft_decode = 1, print_steps = 1, penalty = true, pen_params = nothing)
 
     ## precomputation before iteration
     # only once in the whole EM:
@@ -28,8 +28,18 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     
     π_list = Base.copy(π_list_init)
     state_list = Base.copy(state_list_init)
+
+    # initialize pen_params if not provided OR penalty is false
+    if penalty == false
+        pen_params = [CTHMM.no_penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+    elseif isnothing(pen_params)
+        pen_params = [CTHMM.penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+    end
+
     ll_em_old = -Inf
-    ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+    ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+    ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
+    ll_em = ll_em_np + ll_em_penalty
     iter = 0
     
     while (abs(ll_em - ll_em_old) > ϵ) && (iter < max_iter)
@@ -51,7 +61,10 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         end
         π_list = π_list ./ sum(π_list)
 
-        ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+        ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+        ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
+        ll_em = ll_em_np + ll_em_penalty
+
         s = ll_em - ll_em_temp > 0 ? "+" : "-"
         pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
         if (print_steps > 0) & (iter % print_steps == 0)
@@ -64,7 +77,6 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         ## part 1b: learning α using distinct time grouping
 
         α_old = copy(α) .- Inf
-        
 
         α_iter = 0
         while (α_iter < α_max_iter) && (sum((α - α_old) .^ 2) > 1e-10)
@@ -73,22 +85,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
 
             # have to find Nij_mat and taui_list for each subject
             subject_df = CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_list, distinct_time_list, α, Etij_list)
-
-            # k = 0
-            # for i in 1:(num_state-1)    # fill by row
-            #     tau = subject_df[!, string("tau", i)]
-            #     # w = coalesce.(tau, 0.0)
-            #     for j in 1:num_state
-            #         if i != j
-            #             k = k + 1
-            #             y = log.(subject_df[!, string("N", i, j)] ./ tau)
-            #             α[k, :] = GLM.coef(GLM.lm(X, y))
-            #             # println(α)
-            #         end
-            #     end
-            # end
-
-            # k = 0
+            
             @threads for i in 1:(num_state-1)    # fill by row
                 tau = subject_df[!, string("tau", i)]
                 w = coalesce.(tau, 0.0)
@@ -106,7 +103,10 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                 GC.safepoint()
             end
             
-            ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
+            ll_em = ll_em_np + ll_em_penalty
+
             s = ll_em - ll_em_temp > 0 ? "+" : "-"
             pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
             if (print_steps > 0) & (iter % print_steps == 0)
@@ -126,10 +126,13 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         for d in 1:num_dim
             params_old = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
             for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty)
+                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty, pen_params_jk = pen_params[d][i])
                 # Svi has not been changed since E-step
             end
-            ll_em = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
+            ll_em = ll_em_np + ll_em_penalty
+
             s = ll_em - ll_em_temp > 0 ? "+" : "-"
             pct = abs((ll_em - ll_em_temp) / ll_em_temp) * 100
             if (print_steps > 0) & (iter % print_steps == 0)
@@ -155,6 +158,6 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     # converge = (ll_em - ll_em_old > ϵ) ? false : true
 
     return (α_fit = α, π_list_fit = π_list, state_list_fit = state_list,
-            converge = converge, iter = iter, ll = ll_em)
+            converge = converge, iter = iter, ll = ll_em, ll_np = ll_em_np)
 
 end
