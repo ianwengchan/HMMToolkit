@@ -17,6 +17,8 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
     T1 = -Inf * ones(num_state, len_time_series)    # tracking best prob so far
     T2 = zeros(Int8, num_state, len_time_series)  # backtracking pointer, Int8 for indexing
 
+    GC.safepoint()
+
     ## precomputing of Pt for every visit
     log_Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     @threads for v = 1:(len_time_series-1)
@@ -25,6 +27,8 @@ function CTHMM_decode_viterbi(seq_df, log_data_emiss_prob_list, Q_mat, π_list)
         log_Pt_list[v] = log.(distinct_time_Pt_list[t_idx])
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     ## init T1 and T2 at first timepoint
     max_log_prob = -Inf

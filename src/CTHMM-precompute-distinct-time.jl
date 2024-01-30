@@ -13,6 +13,8 @@ function CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)  # te
     num_distinct_time = size(distinct_time_list, 1)
     distinct_time_Pt_list = Array{Matrix{Float64}}(undef, num_distinct_time)
 
+    GC.safepoint()
+
     # for each distinct time
     @threads for t_idx = 1:num_distinct_time
             
@@ -33,6 +35,8 @@ function CTHMM_precompute_distinct_time_log_Pt_list(distinct_time_list, Q_mat)  
 
     num_distinct_time = size(distinct_time_list, 1)
     distinct_time_log_Pt_list = Array{Matrix{Float64}}(undef, num_distinct_time)
+
+    GC.safepoint()
 
     # for each distinct time
     @threads for t_idx = 1:num_distinct_time

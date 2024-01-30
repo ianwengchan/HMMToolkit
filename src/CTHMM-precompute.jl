@@ -8,6 +8,8 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
     num_dim = size(state_list, 1)
 
     obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
+
+    GC.safepoint()
     
     @threads for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
@@ -40,6 +42,8 @@ function CTHMM_precompute_batch_data_emission_prob(df, response_list, state_list
         
     end
 
+    GC.safepoint()
+
     return obs_seq_emiss_list
 
 end
@@ -55,6 +59,8 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
     num_dim = size(state_list, 1)
 
     obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
+
+    GC.safepoint()
     
     @threads for g = 1:num_time_series   # number of time series to consider, e.g. trips
 
@@ -85,6 +91,8 @@ function CTHMM_precompute_batch_data_emission_log_prob(df, response_list, state_
         GC.safepoint()
         
     end
+
+    GC.safepoint()
 
     return obs_seq_emiss_list
 

@@ -11,6 +11,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
     A[1:num_state, 1:num_state] = Q_mat
     A[(num_state+1):end, (num_state+1):end] = Q_mat
 
+    GC.safepoint()
+
     ## for each state; compute tau_i
     for i = 1:num_state
         
@@ -18,6 +20,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
         A[i, i + num_state] = 1
 
         Ri_list = Array{Float64}(undef, num_distinct_time)
+
+        GC.safepoint()
         
         @threads for t_idx = 1:num_distinct_time # delta = 1:r
 
@@ -33,6 +37,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
             GC.safepoint()
         end
 
+        GC.safepoint()
+
         # tau_i
         taui_list[i] = taui_list[i] + sum(Ri_list)    # storing 1 tau_i for each i from all delta
 
@@ -46,6 +52,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
         GC.safepoint()
         
     end
+
+    GC.safepoint()
             
     
     # for each link; compute n_ij
@@ -59,6 +67,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                 A[i, j + num_state] = 1
 
                 temp_sum_list = Array{Float64}(undef, num_distinct_time)
+
+                GC.safepoint()
                 
                 @threads for t_idx = 1:num_distinct_time
                     
@@ -73,6 +83,8 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                     temp_sum_list[t_idx] = temp_sum
                     GC.safepoint()
                 end
+
+                GC.safepoint()
     
                 nij = sum(temp_sum_list) * Q_mat[i, j]
     
@@ -103,6 +115,8 @@ function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_
     Nij_list_all = Array{Array{Float64}}(undef, num_subject)
     taui_list_all = Array{Array{Float64}}(undef, num_subject)
 
+    GC.safepoint()
+
     @threads for n = 1:num_subject
         Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
         distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list[n], Qn)
@@ -117,6 +131,8 @@ function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_
         #     end
         # end
     end
+
+    GC.safepoint()
 
     for i = 1:num_state
         subject_df[:, string("tau", i)] = map(x -> x[i], taui_list_all)

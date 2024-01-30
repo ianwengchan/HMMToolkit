@@ -21,6 +21,8 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
     Etij_list = Array{Array{Float64, 3}}(undef, num_time_series)
     Svi_list = Array{Array{Float64}}(undef, num_time_series)
 
+    GC.safepoint()
+
     @threads for g = 1:num_time_series
 
         seq_df = group_df[g]
@@ -81,6 +83,8 @@ function CTHMM_batch_decode_Etij_for_subjects(soft_decode, df, response_list, Q_
         
     end # g
 
+    GC.safepoint()
+
     cur_all_subject_prob = sum(cur_all_subject_prob_list)
     Etij_all = sum(Etij_list)
 
@@ -125,6 +129,8 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
 
     cur_all_subject_prob_list = Array{Float64}(undef, num_time_series)
 
+    GC.safepoint()
+
     @threads for g = 1:num_time_series
 
         seq_df = group_df[g]
@@ -149,6 +155,8 @@ function CTHMM_batch_decode_for_subjects(soft_decode, df, response_list, Q_mat, 
         
     end # g
 
+    GC.safepoint()
+
     cur_all_subject_prob = sum(cur_all_subject_prob_list)
 
     return cur_all_subject_prob
@@ -171,6 +179,8 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
     # note that the length of t depends on the subject
     Svi_list = Array{Array{Float64}}(undef, num_subject)
 
+    GC.safepoint()
+
     # cur_all_subject_prob = 0.0
     @threads for n = 1:num_subject
         df_n = group_df[n]
@@ -182,6 +192,8 @@ function CTHMM_batch_decode_Etij_for_cov_subjects(soft_decode, df, response_list
         Etij_list[n] = Etij
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     cur_all_subject_prob = sum(cur_all_subject_prob_list)
 
@@ -220,6 +232,8 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
     num_subject = size(group_df, 1)
     cur_all_subject_prob_list = Array{Float64}(undef, num_subject)
 
+    GC.safepoint()
+
     # cur_all_subject_prob = 0.0
     @threads for n = 1:num_subject
         df_n = group_df[n]
@@ -229,6 +243,8 @@ function CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, sub
         cur_all_subject_prob_list[n] = subject_log_prob
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     cur_all_subject_prob = sum(cur_all_subject_prob_list)
 

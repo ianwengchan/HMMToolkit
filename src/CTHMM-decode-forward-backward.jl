@@ -19,6 +19,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
     ALPHA = zeros(len_time_series, num_state)
     C = zeros(len_time_series, 1) # rescaling factor
 
+    GC.safepoint()
+
     ## precomputing of Pt for every timepoint
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     @threads for v = 1:(len_time_series-1)
@@ -27,6 +29,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         Pt_list[v] = distinct_time_Pt_list[t_idx]
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     ## init alpha for time 1
     ALPHA[1, :] = π_list .* data_emiss_prob_list[1, :]
@@ -73,6 +77,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
     ## compute Evij, two-slice marginal
     Evij = zeros((len_time_series-1), num_state, num_state)
 
+    GC.safepoint()
+
     @threads for v = 1:(len_time_series-1)
 
         for i = 1:num_state
@@ -84,6 +90,8 @@ function CTHMM_decode_forward_backward(seq_df, data_emiss_prob_list, Q_mat, π_l
         GC.safepoint()
     
     end
+
+    GC.safepoint()
     
     ## check rabinar's paper
     log_prob = 0
@@ -113,6 +121,8 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
     ALPHA = zeros(len_time_series, num_state)
     C = zeros(len_time_series, 1) # rescaling factor
 
+    GC.safepoint()
+
     ## precomputing of Pt for every timepoint
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     @threads for v = 1:(len_time_series-1)
@@ -121,6 +131,8 @@ function CTHMM_likelihood_forward(seq_df, data_emiss_prob_list, Q_mat, π_list; 
         Pt_list[v] = distinct_time_Pt_list[t_idx]
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     ## init alpha for time 1
     ALPHA[1, :] = π_list .* data_emiss_prob_list[1, :]
@@ -165,6 +177,8 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
     ## obs_seq_emiss_list[g][1] # data_emiss_prob_list
     ## obs_seq_emiss_list[g][2] # log_data_emiss_prob_list
 
+    GC.safepoint()
+
     Pt_list = Array{Matrix{Float64}}(undef, (len_time_series-1))
     @threads for v = 1:(len_time_series-1)
         T = time_interval_list[v]
@@ -172,6 +186,8 @@ function CTHMM_likelihood_true(seq_df, data_emiss_prob_list, Q_mat, π_list, tru
         Pt_list[v] = distinct_time_Pt_list[t_idx]
         GC.safepoint()
     end
+
+    GC.safepoint()
 
     v = 1
     log_prob = log((π_list .* data_emiss_prob_list[1, :])[true_state[1]])

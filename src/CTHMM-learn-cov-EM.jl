@@ -14,6 +14,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         GC.safepoint()
     end
 
+    GC.safepoint()
+
     # for i = 1:num_state
     #     subject_df[:, string("tau", i)] = missings(Float64, num_subject)
     #     for j = 1:num_state
@@ -41,6 +43,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
     ll_em = ll_em_np + ll_em_penalty
     iter = 0
+
+    GC.safepoint()
     
     while (abs(ll_em - ll_em_old) > ϵ) && (iter < max_iter)
         
@@ -74,6 +78,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
         end
         ll_em_temp = ll_em
 
+        GC.safepoint()
+
         ## part 1b: learning α using distinct time grouping
 
         α_old = copy(α) .- Inf
@@ -102,6 +108,8 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                 end
                 GC.safepoint()
             end
+
+            GC.safepoint()
             
             ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
             ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
@@ -118,6 +126,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                 )
             end
             ll_em_temp = ll_em
+            GC.safepoint()
         end
 
         GC.safepoint()
@@ -147,6 +156,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                 end
             end
             ll_em_temp = ll_em
+            GC.safepoint()
         end
 
         GC.safepoint()
@@ -155,7 +165,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
     
     converge = (0 <= ll_em - ll_em_old <= ϵ)
 
-    # converge = (ll_em - ll_em_old > ϵ) ? false : true
+    GC.safepoint()
 
     return (α_fit = α, π_list_fit = π_list, state_list_fit = state_list,
             converge = converge, iter = iter, ll = ll_em, ll_np = ll_em_np)
