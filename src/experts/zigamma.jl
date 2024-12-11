@@ -45,23 +45,25 @@ function logcdf(d::ZIGammaExpert, x...)
     return if (d.k < 1 && x... <= 0.0)
         -Inf
     else
-        Distributions.logcdf.(Distributions.Gamma(d.k, d.θ), x...)
+        # Distributions.logcdf.(Distributions.Gamma(d.k, d.θ), x...)
+        log(d.p + (1 - d.p) * Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...))
     end
 end
 function cdf(d::ZIGammaExpert, x...)
     return if (d.k < 1 && x... <= 0.0)
         0.0
     else
-        Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...)
+        # Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...)
+        d.p + (1 - d.p) * Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...)
     end
 end
 
 ## expert_ll, etc
 function expert_ll_exact(d::ZIGammaExpert, x::Real)
-    return (x == 0.0) ? log(p_zero(d)) : log(1 - p_zero(d)) + CTHMM.logpdf(d, x)
+    return (x == 0.0) ? log(p_zero(d)) : log(1 - p_zero(d)) + HMMToolkit.logpdf(d, x)
 end
 function expert_ll(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-    expert_ll_pos = CTHMM.expert_ll(CTHMM.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
+    expert_ll_pos = HMMToolkit.expert_ll(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
     # Deal with zero inflation
     p0 = p_zero(d)
     expert_ll = if (yl == 0.0)
@@ -73,7 +75,7 @@ function expert_ll(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     return expert_ll
 end
 # function expert_tn(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_pos = CTHMM.expert_tn(CTHMM.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
+#     expert_tn_pos = HMMToolkit.expert_tn(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
 #     # Deal with zero inflation
 #     p0 = p_zero(d)
 #     expert_tn = if (tl == 0.0)
@@ -85,7 +87,7 @@ end
 #     return expert_tn
 # end
 # function expert_tn_bar(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar_pos = CTHMM.expert_tn_bar(CTHMM.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
+#     expert_tn_bar_pos = HMMToolkit.expert_tn_bar(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
 #     # Deal with zero inflation
 #     p0 = p_zero(d)
 #     expert_tn_bar = if (tl > 0.0)
@@ -102,6 +104,7 @@ exposurize_expert(d::ZIGammaExpert; exposure=1) = d
 params(d::ZIGammaExpert) = (d.p, d.k, d.θ)
 p_zero(d::ZIGammaExpert) = d.p
 function params_init(y, d::ZIGammaExpert)
+    y = collect(skipmissing(y))
     p_init = sum(y .== 0.0) / sum(y .>= 0.0)
     pos_idx = (y .> 0.0)
     μ, σ2 = mean(y[pos_idx]), var(y[pos_idx])
@@ -166,8 +169,8 @@ end
 #     end
 
 #     # Update zero probability
-#     expert_ll_pos = expert_ll.(CTHMM.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
-#     expert_tn_bar_pos = expert_tn_bar.(CTHMM.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
+#     expert_ll_pos = expert_ll.(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
+#     expert_tn_bar_pos = expert_tn_bar.(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
 
 #     z_zero_e_obs = z_e_obs .* EM_E_z_zero_obs(yl, p_old, expert_ll_pos)
 #     z_pos_e_obs = z_e_obs .- z_zero_e_obs
@@ -203,21 +206,29 @@ function EM_M_expert_exact(d::ZIGammaExpert,
     z_e_obs = collect(skipmissing(z_e_obs))
 
     # Old parameters
+    k_old = d.k
+    θ_old = d.θ
     p_old = p_zero(d)
 
     if p_old > 0.999999
         return d
     end
 
-    # Update zero probability
-    expert_ll_pos = expert_ll_exact.(CTHMM.GammaExpert(d.k, d.θ), ye)
+    if p_old < 1e-6
+        p_old = 1e-6
+    end
 
-    z_zero_e_obs = z_e_obs .* EM_E_z_zero_obs(ye, p_old, expert_ll_pos)
+    # Update zero probability
+    expert_ll_pos = HMMToolkit.expert_ll_exact.(HMMToolkit.GammaExpert(d.k, d.θ), ye)
+
+    z_zero_e_obs = z_e_obs .* HMMToolkit.EM_E_z_zero_obs(ye, p_old, expert_ll_pos)
     z_pos_e_obs = z_e_obs .- z_zero_e_obs
-    p_new = EM_M_zero(z_zero_e_obs, z_pos_e_obs, 0.0, 0.0, 0.0)
+    p_new = HMMToolkit.EM_M_zero(z_zero_e_obs, z_pos_e_obs, 0.0, 0.0, 0.0)
+
+    p_new = max(0.0, min(1 - 1e-08, p_new))
 
     # Update parameters: call its positive part
-    tmp_exp = GammaExpert(d.k, d.θ)
+    tmp_exp = GammaExpert(k_old, θ_old)
     tmp_update = EM_M_expert_exact(tmp_exp,
         ye, # exposure,
         z_pos_e_obs;

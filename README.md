@@ -1,8 +1,8 @@
-# FitHMM-jl
+# HMMToolkit
 
 This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
 to make a reproducible scientific project named
-> FitHMM-jl
+> HMMToolkit
 
 It is authored by Sophia Chan.
 

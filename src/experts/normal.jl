@@ -47,7 +47,7 @@ end
 cdf(d::NormalExpert, x...) = Distributions.cdf.(Distributions.Normal(d.μ, d.σ), x...)
 
 ## expert_ll, etc
-expert_ll_exact(d::NormalExpert, x::Real) = CTHMM.logpdf(d, x)
+expert_ll_exact(d::NormalExpert, x::Real) = HMMToolkit.logpdf(d, x)
 function expert_ll(d::NormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -80,6 +80,7 @@ exposurize_expert(d::NormalExpert; exposure=1) = d
 ## Parameters
 params(d::NormalExpert) = (d.μ, d.σ)
 function params_init(y, d::NormalExpert)
+    y = collect(skipmissing(y))
     # pos_idx = (y .> 0.0)  # Normal distribution takes negative values as well
     μ_init, σ_init = mean(y), sqrt(var(y))
     μ_init = isnan(μ_init) ? 0.0 : μ_init
@@ -267,7 +268,7 @@ function EM_M_expert_exact(
         )
     end
     tmp = numerator / denominator
-    σ_new = sqrt(maximum([0.0, tmp]))
+    σ_new = sqrt(maximum([1e-10, tmp]))
 
     return NormalExpert(μ_new, σ_new)
 end

@@ -47,7 +47,7 @@ end
 cdf(d::LaplaceExpert, x...) = Distributions.cdf.(Distributions.Laplace(d.μ, d.θ), x...)
 
 ## expert_ll, etc
-expert_ll_exact(d::LaplaceExpert, x::Real) = CTHMM.logpdf(d, x)
+expert_ll_exact(d::LaplaceExpert, x::Real) = HMMToolkit.logpdf(d, x)
 function expert_ll(d::LaplaceExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -81,6 +81,7 @@ exposurize_expert(d::LaplaceExpert; exposure=1) = d
 ## Parameters
 params(d::LaplaceExpert) = (d.μ, d.θ)
 function params_init(y, d::LaplaceExpert)
+    y = collect(skipmissing(y))
     # pos_idx = (y .> 0.0)  # Laplace distribution takes negative values as well
     μ_init, θ_init = mean(y), sqrt(var(y)/2)
     μ_init = isnan(μ_init) ? 0.0 : μ_init
@@ -131,7 +132,7 @@ function EM_M_expert_exact(d::LaplaceExpert,
     # pos_idx = (ye .!= 0.0)
     term_zkz = z_e_obs
 
-    μ_new = CTHMM.weighted_median(ye, z_e_obs)
+    μ_new = HMMToolkit.weighted_median(ye, z_e_obs)
     term_zkz_Y_minus_μ_abs = abs.(Y_e_obs .- μ_new) .* z_e_obs 
 
     denominator = penalty ? (sum(term_zkz)[1] + (pen_params_jk[2] - 1)) : sum(term_zkz)[1]

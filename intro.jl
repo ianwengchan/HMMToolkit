@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate "FitHMM-jl"
+@quickactivate "HMMToolkit"
 
 println(
 """

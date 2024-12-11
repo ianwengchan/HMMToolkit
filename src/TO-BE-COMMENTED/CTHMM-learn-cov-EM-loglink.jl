@@ -1,5 +1,6 @@
-function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init;
-    ϵ = 1e-03, max_iter = 200, α_max_iter = 5, soft_decode = 1, print_steps = 1, penalty = true, pen_params = nothing)
+# -*- coding: utf-8 -*-
+function CTHMM_learn_cov_EM_loglink(df, response_list, subject_df, covariate_list, α_init, π_list_init, state_list_init;
+    ϵ = 1e-03, max_iter = 200, α_max_iter = 5, soft_decode = 1, print_steps = 1, penalty = true, pen_params = nothing, group_by_col = nothing)
 
     ## precomputation before iteration
     # only once in the whole EM:
@@ -13,8 +14,6 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
         distinct_time_list[n] = CTHMM_precompute_distinct_time_list(group_df[n].time_interval)
         GC.safepoint()
     end
-
-    GC.safepoint()
 
     # for i = 1:num_state
     #     subject_df[:, string("tau", i)] = missings(Float64, num_subject)
@@ -33,18 +32,16 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
 
     # initialize pen_params if not provided OR penalty is false
     if penalty == false
-        pen_params = [CTHMM.no_penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+        pen_params = [HMMToolkit.no_penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
     elseif isnothing(pen_params)
-        pen_params = [CTHMM.penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+        pen_params = [HMMToolkit.penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
     end
 
     ll_em_old = -Inf
-    ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+    ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0, group_by_col = group_by_col)
     ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
     ll_em = ll_em_np + ll_em_penalty
     iter = 0
-
-    GC.safepoint()
     
     while (abs(ll_em - ll_em_old) > ϵ) && (iter < max_iter)
         
@@ -54,7 +51,7 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
             
         ## E-step
         ## batch soft decoding (option = 1), saving Svi to df; need to compute Etij separately for each subject
-        ll_em_temp, Etij_list = CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+        ll_em_temp, Etij_list = CTHMM_batch_decode_Etij_and_append_Svi_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0, group_by_col = group_by_col)
         
         GC.safepoint()
 
@@ -65,7 +62,7 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
         end
         π_list = π_list ./ sum(π_list)
 
-        ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+        ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0, group_by_col = group_by_col)
         ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
         ll_em = ll_em_np + ll_em_penalty
 
@@ -77,8 +74,6 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
             )
         end
         ll_em_temp = ll_em
-
-        GC.safepoint()
 
         ## part 1b: learning α using distinct time grouping
 
@@ -94,13 +89,13 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
 
             @threads for i in 1:(num_state-1)    # fill by row
                 tau = subject_df[!, string("tau", i)]
-                # w = coalesce.(tau, 0.0)
+                w = coalesce.(tau, 0.0)
                 @threads for j in 1:num_state
                     if i != j
                         # k = k + 1
                         k = (num_state * i) - (num_state - j)  - (i - (i >= j ? 1 : 0))
                         y = subject_df[!, string("N", i, j)] ./ tau
-                        α[k, :] = GLM.coef(GLM(X, log.(y), Normal(), IdentityLink()))
+                        α[k, :] = coef(glm(X, y, Normal(), LogLink(), wts = w))
                         # println(α)
                         GC.safepoint()
                     end
@@ -109,9 +104,25 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
                 GC.safepoint()
             end
 
-            GC.safepoint()
+            # @threads for i in 1:(num_state-1)    # fill by row
+            #     tau = subject_df[!, string("tau", i)]
+            #     # w = coalesce.(tau, 0.0)
+            #     @threads for j in 1:num_state
+            #         if i != j
+            #             # k = k + 1
+            #             k = (num_state * i) - (num_state - j)  - (i - (i >= j ? 1 : 0))
+            #             w = coalesce.(subject_df[!, string("N", i, j)], 0.0)
+            #             y =  tau ./ subject_df[!, string("N", i, j)]
+            #             α[k, :] = -1 .* coef(glm(X, y, Gamma(), LogLink(), wts = w))
+            #             # println(α)
+            #             GC.safepoint()
+            #         end
+            #         GC.safepoint()
+            #     end
+            #     GC.safepoint()
+            # end
             
-            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0, group_by_col = group_by_col)
             ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
             ll_em = ll_em_np + ll_em_penalty
 
@@ -126,19 +137,18 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
                 )
             end
             ll_em_temp = ll_em
-            GC.safepoint()
         end
 
         GC.safepoint()
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
-            params_old = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
+            params_old = (x -> round.(x, digits = 4)).(HMMToolkit.params.(state_list[d, :]))
             for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty, pen_params_jk = pen_params[d][i])
+                state_list[d, i] = HMMToolkit.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty, pen_params_jk = pen_params[d][i])
                 # Svi has not been changed since E-step
             end
-            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
+            ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list; ϵ = 0, group_by_col = group_by_col)
             ll_em_penalty = penalty ? penalty_params(state_list, pen_params) : 0.0
             ll_em = ll_em_np + ll_em_penalty
 
@@ -149,21 +159,18 @@ function CTHMM_learn_cov_EM_alt_now(df, response_list, subject_df, covariate_lis
                     "Iteration $(iter), updating dim $(d): $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
                 )
                 if s == "-"
-                    params_new = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
+                    params_new = (x -> round.(x, digits = 4)).(HMMToolkit.params.(state_list[d, :]))
                     @info(
                         "Intended update of params: $(params_old) ->  $(params_new)"
                     )
                 end
             end
             ll_em_temp = ll_em
-            GC.safepoint()
         end
 
         GC.safepoint()
         
     end # iter
-
-    GC.safepoint()
     
     converge = (0 <= ll_em - ll_em_old <= ϵ)
 

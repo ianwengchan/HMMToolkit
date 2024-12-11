@@ -2,7 +2,7 @@ module fit_jl
 
 using DrWatson
 
-include(srcdir("CTHMM.jl"))
+include(srcdir("HMMToolkit.jl"))
 using .CTHMM
 using Logging, Dates, JLD2
 

@@ -1,3 +1,23 @@
+"""
+    CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
+
+Learns number of state transition `nij` and duration in each state `taui`, 
+given sorted list of distinct time intervals `distinct_time_list`,
+corresponding sorted list of transition probability matrices `distinct_time_Pt_list`,
+transition rate matrix  `Q_mat`,
+and soft count table `Etij`.
+
+# Arguments
+- `distinct_time_list`: Sorted distinct time interval list.
+- `distinct_time_Pt_list`: A sorted list of distinct state transition probability matrices Pt.
+- `Q_mat`: Transition rate matrix.
+- `Etij`: Soft count tables, expected transition probability matrices, for each distinct time interval t.
+
+# Return Values
+- `Nij_mat`: A matrix of number of transitions between states i to j.
+- `taui_list`: A list of duration in each state i.
+"""
+
 function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, Etij)
 
     num_state = size(Q_mat, 1)
@@ -31,7 +51,7 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
 
             Ri = 0.0
             temp = Etij[t_idx, :, :] .* expm_A ./ distinct_time_Pt_list[t_idx]  # check if denominator is nonzero
-            Ri = Ri + sum(filter(x -> x != Inf, temp))
+            Ri = Ri + sum(filter(x -> x != Inf, filter(!isnan, temp)))
 
             Ri_list[t_idx] = Ri
             GC.safepoint()
@@ -78,7 +98,7 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
                                     
                     temp_sum = 0.0
                     temp = Etij[t_idx, :, :] .* expm_A ./ distinct_time_Pt_list[t_idx]
-                    temp_sum = temp_sum + sum(filter(x -> x != Inf, temp))
+                    temp_sum = temp_sum + sum(filter(x -> x != Inf, filter(!isnan, temp)))
 
                     temp_sum_list[t_idx] = temp_sum
                     GC.safepoint()
@@ -104,45 +124,5 @@ function CTHMM_learn_nij_taui(distinct_time_list, distinct_time_Pt_list, Q_mat, 
 
     GC.safepoint()
 
-    return Nij_mat, taui_list
-end
-
-
-
-
-function CTHMM_learn_cov_nij_taui(num_state, num_subject, subject_df, covariate_list, distinct_time_list, α, Etij_list)
-
-    Nij_list_all = Array{Array{Float64}}(undef, num_subject)
-    taui_list_all = Array{Array{Float64}}(undef, num_subject)
-
-    GC.safepoint()
-
-    @threads for n = 1:num_subject
-        Qn = CTHMM.build_cov_Q(num_state, α, hcat(subject_df[n, covariate_list]...))
-        distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list[n], Qn)
-        Nij_mat, taui_list = CTHMM_learn_nij_taui(distinct_time_list[n], distinct_time_Pt_list, Qn, Etij_list[n])
-        Nij_list_all[n] = Nij_mat
-        taui_list_all[n] = taui_list
-        GC.safepoint()
-        # for i = 1:num_state
-        #     subject_df[n, string("tau", i)] = taui_list[i]
-        #     for j = 1:num_state
-        #         subject_df[n, string("N", i, j)] = Nij_mat[i, j]
-        #     end
-        # end
-    end
-
-    GC.safepoint()
-
-    for i = 1:num_state
-        subject_df[:, string("tau", i)] = map(x -> x[i], taui_list_all)
-        for j = 1:num_state
-            subject_df[:, string("N", i, j)] = map(x -> x[i, j], Nij_list_all)
-        end
-    end
-
-    GC.safepoint()
-
-    return subject_df   # stored in subject_df
-
+    return (Nij_mat = Nij_mat, taui_list = taui_list)
 end

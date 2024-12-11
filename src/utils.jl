@@ -21,69 +21,75 @@ rowlogsumexp(x) = logsumexp(x; dims=2)
 weighted_median(x, w) = Statistics.median(convert(Array{Float64}, x), 
     StatsBase.weights(convert(Array{Float64}, w)))
 
-# # replace nan by a number
-# function nan2num(x, g)
-#     for i in eachindex(x)
-#         @inbounds x[i] = ifelse(isnan(x[i]), g, x[i])
-#     end
-# end
+    
+# count parameters for AIC and BIC
+function _count_π(π_list)
+    return length(π_list) - 1
+end
 
-# # replace inf by a number
-# function inf2num(x, g)
-#     for i in eachindex(x)
-#         @inbounds x[i] = ifelse(isinf(x[i]), g, x[i])
-#     end
-# end
+function _count_P_mat(P_mat)
+    return size(P_mat, 1) * (size(P_mat, 1) - 1)
+end
 
-# # matching functions for fast integration
-# function unique_bounds(l, u)
-#     return unique(hcat(vec(l), vec(u)); dims=1)
-# end
+function _count_Q_mat(Q_mat)
+    return (size(Q_mat, 1) - 1) * (size(Q_mat, 1) - 1) 
+end
 
-# matchrow(a, B) = findfirst(i -> all(j -> a[j] == B[i, j], 1:size(B, 2)), 1:size(B, 1))
+function _count_params(state_list)
+    return sum(length.(HMMToolkit.params.(state_list)))
+end
 
-# function match_unique_bounds(all_bounds, unique_bounds)
-#     return [matchrow(all_bounds[i, :], unique_bounds) for i in 1:size(all_bounds)[1]]
-# end
 
-# function match_unique_bounds_threaded(all_bounds, unique_bounds)
-#     result = fill(1, size(all_bounds)[1])
-#     @threads for i in 1:size(all_bounds)[1]
-#         result[i] = matchrow(all_bounds[i, :], unique_bounds)
-#     end
-#     return result
-# end
+# given a dataframe ts, with time_since and time_interval, 
+# linear interpolate each column indicated in response_list
+function linear_interpolate(ts, response_list; ID_list = ["ID"])  # checked
 
-# # recursively solve for quantiles of discrete distributions
-# function _solve_discrete_quantile(d::DiscreteUnivariateDistribution, q::Real)
-#     l, u = 1, 2 * 1
-#     while cdf.(d, u) < q
-#         l = u + 1
-#         u = 2 * l
-#     end
-#     while u - l > 1
-#         tmp = ceil((u + l) / 2)
-#         if cdf.(d, tmp) >= q
-#             l, u = l, tmp
-#         else
-#             l, u = tmp, u
-#         end
-#     end
-#     if cdf.(d, l) >= q
-#         return l
-#     else
-#         return u
-#     end
-# end
+    # Calculate the slopes for each response column
+    slopes = DataFrame()
+    for col in response_list
+        slope_col_name = Symbol(string(col, "_slope"))
+        slopes[!, slope_col_name] = (ts[!, col] - ShiftedArrays.lag(ts[!, col])) ./ ts.time_interval
+    end
 
-# # Convert exact Y to full Y
-# function _exact_to_full(Y)
-#     result = fill(NaN, size(Y)[1], size(Y)[2] * 4)
-#     for j in 1:size(Y)[2]
-#         result[:, 4 * (j - 1) + 1] .= 0.0
-#         result[:, 4 * (j - 1) + 2] .= Y[:, j]
-#         result[:, 4 * (j - 1) + 3] .= Y[:, j]
-#         result[:, 4 * (j - 1) + 4] .= Inf
-#     end
-#     return result
-# end
+    # Create a new DataFrame to hold interpolated values
+    ts_new = DataFrame()
+
+    for i in 1:nrow(ts)
+        if (i > 1) && (ts.time_interval[i] > 1)
+            # just append row 1; else is the time interval > 1? if yes then interpolate
+            timex = 1 : ts.time_interval[i]
+            new_rows = DataFrame()
+            new_rows.time_since = timex .+ ts.time_since[i-1]
+            
+            for col in response_list
+                slope_col_name = Symbol(string(col, "_slope"))
+                new_rows[!, col] = slopes[!, slope_col_name][i] .* timex .+ ts[!, col][i-1]
+            end
+
+            ts_new = vcat(ts_new, new_rows)
+        else
+            ts_new = vcat(ts_new, DataFrame(ts[i, vcat(response_list, "time_since")]))
+        end
+    end
+
+    for col in ID_list
+        ts_new[!, col] .= ts[1, col]
+    end
+
+    return ts_new
+end
+
+
+# replace nan by a number
+function nan2num(x, g)
+    for i in eachindex(x)
+        @inbounds x[i] = ifelse(isnan(x[i]), g, x[i])
+    end
+end
+
+# replace inf by a number
+function inf2num(x, g)
+    for i in eachindex(x)
+        @inbounds x[i] = ifelse(isinf(x[i]), g, x[i])
+    end
+end

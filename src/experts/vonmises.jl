@@ -74,7 +74,7 @@ end
 cdf(d::VonMisesExpert, x...) = Distributions.cdf.(Distributions.VonMises(d.μ, d.κ), map_vonmises_domain(x, d.μ)...)
 
 ## expert_ll, etc
-expert_ll_exact(d::VonMisesExpert, x::Real) = CTHMM.logpdf(d, x)
+expert_ll_exact(d::VonMisesExpert, x::Real) = HMMToolkit.logpdf(d, x)
 function expert_ll(d::VonMisesExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -89,7 +89,7 @@ exposurize_expert(d::VonMisesExpert; exposure=1) = d
 
 # function A(x)
 function A(x::Real)
-    @check_args(A, x>0)
+    @check_args(A, x>=0)
     if x <= 713.9
         y = Bessels.besseli1(x) / Bessels.besseli0(x)
     else
@@ -102,7 +102,7 @@ end
 # if κ -> 1 VonMises distribution corresponds to uniform distribution so κ value below 1 is dropped
 # maximum(diff(invA_table.y)) < 0.005, 
 # 0.0049999375 < invA_table.y < 0.999898
-x = vcat(collect(0.01 : 0.01 : 5),
+x = vcat(collect(0.0 : 0.01 : 5),
          collect(5.1 : 0.1 : 20),
          collect(21.0 : 1.0 : 50),
          collect(55.0 : 5.0 : 200),
@@ -112,7 +112,7 @@ invA_table = DataFrames.DataFrame([x, map(A, x)], [:x, :y])
 # function invA(y) use the table to estimate κ
 function invA(y)
     y = abs.(y) # A(x) = -A(x)
-    @check_args(invA, maximum(y) < maximum(invA_table.y) && minimum(y) > 0)
+    # @check_args(invA, maximum(y) < maximum(invA_table.y) && minimum(y) > 0)
             if size(y, 1) == 1
                 x = mean(filter(row -> isapprox(row.y, y, atol = 0.005) == true, invA_table).x) # linear interpolation
             else
@@ -124,6 +124,7 @@ end
 ## Parameters
 params(d::VonMisesExpert) = (d.μ, d.κ)
 function params_init(y, d::VonMisesExpert)
+    y = collect(skipmissing(y))
     # pos_idx = (y .> 0.0)  # VonMises distribution takes negative values as well
     μ_init, κ_init = mean(y), invA(1 - var(y))
     μ_init = isnan(μ_init) ? 0.0 : μ_init
@@ -188,16 +189,16 @@ function EM_M_expert_exact(d::VonMisesExpert,
             sum(term_zkz_cos_Y_minus_μ)[1]
         )
     end
-    tmp = CTHMM.invA(numerator ./ denominator)
+    tmp = HMMToolkit.invA(numerator ./ denominator)
     κ_new = maximum([0.0, tmp])
     # shifting μ does not affect the estimation of κ in the current iteration
     
     μ_tmp = μ_new
-    current_ll = sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new, κ_new), ye) .* z_e_obs)
+    current_ll = sum(HMMToolkit.logpdf.(HMMToolkit.VonMisesExpert(μ_new, κ_new), ye) .* z_e_obs)
 
-    if (-π <= (μ_new - π) <= π) && (sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new - π, κ_new), ye) .* z_e_obs) >= current_ll)
+    if (-π <= (μ_new - π) <= π) && (sum(HMMToolkit.logpdf.(HMMToolkit.VonMisesExpert(μ_new - π, κ_new), ye) .* z_e_obs) >= current_ll)
         μ_tmp = μ_new - π
-    elseif (-π <= (μ_new + π) <= π) && (sum(CTHMM.logpdf.(CTHMM.VonMisesExpert(μ_new + π, κ_new), ye) .* z_e_obs) >= current_ll)
+    elseif (-π <= (μ_new + π) <= π) && (sum(HMMToolkit.logpdf.(HMMToolkit.VonMisesExpert(μ_new + π, κ_new), ye) .* z_e_obs) >= current_ll)
         μ_tmp = μ_new + π
     end
     μ_new = μ_tmp

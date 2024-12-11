@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 struct ZILogNormalExpert{T<:Real} <: ZIContinuousExpert
     p::T
     μ::T
@@ -31,22 +30,26 @@ copy(d::ZILogNormalExpert) = ZILogNormalExpert(d.p, d.μ, d.σ; check_args=false
 
 ## Loglikelihood of Expoert
 function logpdf(d::ZILogNormalExpert, x...)
-    return Distributions.logpdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    ans = (x .== 0.0) ? log(d.p) : log(1 - d.p) + Distributions.logpdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    return ans
 end
+
 function pdf(d::ZILogNormalExpert, x...)
-    return Distributions.pdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    ans = vcat((x .== 0)...) * d.p + vcat((x .> 0)...) .* (1 - d.p) .* Distributions.pdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    # ans = (x .== 0.0) ? d.p : (1 - d.p) * Distributions.pdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    return ans
 end
+
 function logcdf(d::ZILogNormalExpert, x...)
-    # return Distributions.logcdf.(Distributions.LogNormal(d.μ, d.σ), x...)
     return log(d.p + (1 - d.p) * Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...))
 end
+
 function cdf(d::ZILogNormalExpert, x...)
-    # return Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
     return d.p + (1 - d.p) * Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
 end
 
 function expert_ll_exact(d::ZILogNormalExpert, x::Real)
-    return (x == 0.0) ? log(p_zero(d)) : log(1 - p_zero(d)) + HMMToolkit.logpdf(d, x)
+    return HMMToolkit.logpdf(d, x)
 end
 function expert_ll(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll_pos = HMMToolkit.expert_ll(HMMToolkit.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
@@ -90,7 +93,6 @@ exposurize_expert(d::ZILogNormalExpert; exposure=1) = d
 params(d::ZILogNormalExpert) = (d.p, d.μ, d.σ)
 p_zero(d::ZILogNormalExpert) = d.p
 function params_init(y, d::ZILogNormalExpert)
-    y = collect(skipmissing(y))
     p_init = sum(y .== 0.0) / sum(y .>= 0.0)
     pos_idx = (y .> 0.0)
     μ_init, σ_init = mean(log.(y[pos_idx])), sqrt(var(log.(y[pos_idx])))
@@ -132,7 +134,7 @@ end
 # lev(d::ZILogNormalExpert, u) = (1 - d.p) * lev(LogNormalExpert(d.μ, d.σ), u)
 # excess(d::ZILogNormalExpert, u) = mean(d) - lev(d, u)
 
-# # EM: M-Step
+## EM: M-Step
 # function EM_M_expert(d::ZILogNormalExpert,
 #     tl, yl, yu, tu,
 #     exposure,
@@ -181,10 +183,6 @@ function EM_M_expert_exact(d::ZILogNormalExpert,
     μ_old = d.μ
     σ_old = d.σ
     p_old = p_zero(d)
-
-    if p_old < 1e-6
-        p_old = 1e-6
-    end
 
     # Update zero probability
     expert_ll_pos = expert_ll_exact.(HMMToolkit.LogNormalExpert(μ_old, σ_old), ye)

@@ -67,7 +67,7 @@ function cdf(d::GammaExpert, x...)
 end
 
 ## expert_ll, etc
-expert_ll_exact(d::GammaExpert, x::Real) = CTHMM.logpdf(d, x)
+expert_ll_exact(d::GammaExpert, x::Real) = HMMToolkit.logpdf(d, x)
 function expert_ll(d::GammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = if (yl == yu)
         logpdf.(d, yl)
@@ -100,6 +100,7 @@ exposurize_expert(d::GammaExpert; exposure=1) = d
 ## Parameters
 params(d::GammaExpert) = (d.k, d.θ)
 function params_init(y, d::GammaExpert)
+    y = collect(skipmissing(y))
     pos_idx = (y .> 0.0)
     μ, σ2 = mean(y[pos_idx]), var(y[pos_idx])
     θ_init = σ2 / μ
@@ -341,6 +342,8 @@ function EM_M_expert_exact(d::GammaExpert,
         penalty = penalty,
         pen_params_jk = pen_params_jk,
     )
+
+    θ_new = (maximum([1e-5, θ_new]))
 
     return GammaExpert(k_new, θ_new)
 end

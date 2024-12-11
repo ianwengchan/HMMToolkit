@@ -33,9 +33,9 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
 
     # initialize pen_params if not provided OR penalty is false
     if penalty == false
-        pen_params = [CTHMM.no_penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+        pen_params = [HMMToolkit.no_penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
     elseif isnothing(pen_params)
-        pen_params = [CTHMM.penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
+        pen_params = [HMMToolkit.penalty_init.(state_list[k, :]) for k in 1:size(state_list)[1]]
     end
 
     ll_em_old = -Inf
@@ -133,9 +133,9 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
 
         ## part 2: learning state dependent distribution parameters
         for d in 1:num_dim
-            params_old = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
+            params_old = (x -> round.(x, digits = 4)).(HMMToolkit.params.(state_list[d, :]))
             for i in 1:num_state
-                state_list[d, i] = CTHMM.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty, pen_params_jk = pen_params[d][i])
+                state_list[d, i] = HMMToolkit.EM_M_expert_exact(state_list[d, i], df[:, response_list[d]], df[:, string("Sv", i)]; penalty=penalty, pen_params_jk = pen_params[d][i])
                 # Svi has not been changed since E-step
             end
             ll_em_np = CTHMM_batch_decode_for_cov_subjects(soft_decode, df, response_list, subject_df, covariate_list, α, π_list, state_list)
@@ -149,7 +149,7 @@ function CTHMM_learn_cov_EM(df, response_list, subject_df, covariate_list, α_in
                     "Iteration $(iter), updating dim $(d): $(ll_em_temp) ->  $(ll_em), ( $(s) $(pct) % )"
                 )
                 if s == "-"
-                    params_new = (x -> round.(x, digits = 4)).(CTHMM.params.(state_list[d, :]))
+                    params_new = (x -> round.(x, digits = 4)).(HMMToolkit.params.(state_list[d, :]))
                     @info(
                         "Intended update of params: $(params_old) ->  $(params_new)"
                     )
