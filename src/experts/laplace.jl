@@ -57,23 +57,6 @@ function expert_ll(d::LaplaceExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = (tu == 0.0) ? -Inf : expert_ll
     return expert_ll
 end
-# function expert_tn(d::LaplaceExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn = if (tl == tu)
-#         logpdf.(d, tl)
-#     else
-#         logcdf.(d, tu) + log1mexp.(logcdf.(d, tl) - logcdf.(d, tu))
-#     end
-#     expert_tn = (tu == 0.0) ? -Inf : expert_tn
-#     return expert_tn
-# end
-# function expert_tn_bar(d::LaplaceExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar = if (tl == tu)
-#         0.0
-#     else
-#         log1mexp.(logcdf.(d, tu) + log1mexp.(logcdf.(d, tl) - logcdf.(d, tu)))
-#     end
-#     return expert_tn_bar
-# end
 
 
 exposurize_expert(d::LaplaceExpert; exposure=1) = d
@@ -85,7 +68,7 @@ function params_init(y, d::LaplaceExpert)
     # pos_idx = (y .> 0.0)  # Laplace distribution takes negative values as well
     μ_init, θ_init = mean(y), sqrt(var(y)/2)
     μ_init = isnan(μ_init) ? 0.0 : μ_init
-    θ_init = isnan(θ_init) ? 1.0 : θ_init
+    θ_init = isnan(θ_init) || (θ_init == 0) ? 1.0 : θ_init
     return LaplaceExpert(μ_init, θ_init)
 end
 
@@ -138,7 +121,9 @@ function EM_M_expert_exact(d::LaplaceExpert,
     denominator = penalty ? (sum(term_zkz)[1] + (pen_params_jk[2] - 1)) : sum(term_zkz)[1]
     numerator = penalty ? (sum(term_zkz_Y_minus_μ_abs)[1] + (pen_params_jk[1] - 1)) : sum(term_zkz_Y_minus_μ_abs)[1]
     tmp = numerator / denominator
-    θ_new = maximum([0.0, tmp])
+    tmp = isnan(tmp) ? 0.0 : tmp
+    
+    θ_new = maximum([1e-10,tmp, 0])
 
     return LaplaceExpert(μ_new, θ_new)
 end

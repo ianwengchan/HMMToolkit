@@ -77,23 +77,7 @@ function expert_ll(d::GammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = (tu == 0.0) ? -Inf : expert_ll
     return expert_ll
 end
-# function expert_tn(d::GammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn = if (tl == tu)
-#         logpdf.(d, tl)
-#     else
-#         logcdf.(d, tu) + log1mexp.(logcdf.(d, tl) - logcdf.(d, tu))
-#     end
-#     expert_tn = (tu == 0.0) ? -Inf : expert_tn
-#     return expert_tn
-# end
-# function expert_tn_bar(d::GammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar = if (tl == tu)
-#         0.0
-#     else
-#         log1mexp.(logcdf.(d, tu) + log1mexp.(logcdf.(d, tl) - logcdf.(d, tu)))
-#     end
-#     return expert_tn_bar
-# end
+
 
 exposurize_expert(d::GammaExpert; exposure=1) = d
 
@@ -105,7 +89,7 @@ function params_init(y, d::GammaExpert)
     μ, σ2 = mean(y[pos_idx]), var(y[pos_idx])
     θ_init = σ2 / μ
     k_init = μ / θ_init
-    if isnan(θ_init) || isnan(k_init)
+    if isnan(θ_init) || isnan(k_init) || isinf(k_init) || isinf(θ_init) || (θ_init == 0)
         return GammaExpert()
     else
         return GammaExpert(k_init, θ_init)
@@ -135,70 +119,7 @@ end
 mean(d::GammaExpert) = mean(Distributions.Gamma(d.k, d.θ))
 var(d::GammaExpert) = var(Distributions.Gamma(d.k, d.θ))
 quantile(d::GammaExpert, p) = quantile(Distributions.Gamma(d.k, d.θ), p)
-# function lev(d::GammaExpert, u)
-#     if isinf(u)
-#         return mean(d)
-#     else
-#         return d.θ * d.k * gamma_inc(float(d.k + 1), u / d.θ, 0)[1] +
-#                u * (1 - gamma_inc(float(d.k), u / d.θ, 0)[1])
-#     end
-# end
-# excess(d::GammaExpert, u) = mean(d) - lev(d, u)
 
-# ## Misc functions for E-Step
-# function _diff_dist_series(d::GammaExpert, yl, yu)
-#     return cdf.(Distributions.Gamma(d.k + 1, d.θ), yu) -
-#            cdf.(Distributions.Gamma(d.k + 1, d.θ), yl)
-# end
-
-# function _int_obs_Y(d::GammaExpert, yl, yu, expert_ll)
-#     if yl == yu
-#         return yl
-#     else
-#         return exp(-expert_ll) * (_diff_dist_series(d, yl, yu) * d.k * d.θ)
-#     end
-# end
-
-# function _int_lat_Y(d::GammaExpert, tl, tu, expert_tn_bar)
-#     if tl == tu
-#         return tl
-#     else
-#         return exp(-expert_tn_bar) * ((1 - _diff_dist_series(d, tl, tu)) * d.k * d.θ)
-#     end
-# end
-
-# function _int_logy_func(d::GammaExpert, x)
-#     return (iszero(x) || isinf(x)) ? 0.0 : log(x) * pdf.(d, x)
-# end
-
-# function _int_obs_logY_raw(d::GammaExpert, yl, yu)
-#     if yl == yu
-#         return log(yl) * pdf.(d, yl)
-#     else
-#         return quadgk.(x -> _int_logy_func(d, x), yl, yu, rtol=1e-8)[1]
-#     end
-# end
-
-# function _int_obs_logY_raw_threaded(d::GammaExpert, yl, yu)
-#     result = fill(NaN, length(yl))
-#     @threads for i in 1:length(yl)
-#         result[i] = _int_obs_logY_raw(d, yl[i], yu[i])
-#     end
-#     return result
-# end
-
-# function _int_lat_logY_raw(d::GammaExpert, tl, tu)
-#     return (tl == 0 ? 0.0 : quadgk.(x -> _int_logy_func(d, x), 0.0, tl, rtol=1e-8)[1]) +
-#            (isinf(tu) ? 0.0 : quadgk.(x -> _int_logy_func(d, x), tu, Inf, rtol=1e-8)[1])
-# end
-
-# function _int_lat_logY_raw_threaded(d::GammaExpert, tl, tu)
-#     result = fill(NaN, length(tl))
-#     @threads for i in 1:length(tl)
-#         result[i] = _int_lat_logY_raw(d, tl[i], tu[i])
-#     end
-#     return result
-# end
 
 function _gamma_k_to_θ(k, sum_term_zkz, sum_term_zkzy;
     penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
@@ -237,71 +158,6 @@ function _gamma_optim_k(logk,
     return (obj + p) * (-1.0)
 end
 
-## EM: M-Step
-# function EM_M_expert(d::GammaExpert,
-#     tl, yl, yu, tu,
-#     exposure,
-#     #  expert_ll_pos,
-#     #  expert_tn_pos,
-#     #  expert_tn_bar_pos,
-#     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
-
-#     # Further E-Step
-#     expert_ll_pos = expert_ll.(d, tl, yl, yu, tu)
-#     expert_tn_bar_pos = expert_tn_bar.(d, tl, yl, yu, tu)
-
-#     Y_e_obs = vec(_int_obs_Y.(d, yl, yu, expert_ll_pos))
-#     Y_e_lat = vec(_int_lat_Y.(d, tl, tu, expert_tn_bar_pos))
-#     nan2num(Y_e_obs, 0.0) # get rid of NaN
-#     nan2num(Y_e_lat, 0.0) # get rid of NaN
-
-#     yl_yu_unique = unique_bounds(yl, yu)
-#     int_obs_logY_tmp = _int_obs_logY_raw_threaded(d, yl_yu_unique[:, 1], yl_yu_unique[:, 2])
-#     logY_e_obs =
-#         exp.(-expert_ll_pos) .*
-#         int_obs_logY_tmp[match_unique_bounds_threaded(hcat(vec(yl), vec(yu)), yl_yu_unique)]
-#     nan2num(logY_e_obs, 0.0) # get rid of NaN
-
-#     tl_tu_unique = unique_bounds(tl, tu)
-#     int_lat_logY_tmp = _int_lat_logY_raw_threaded(d, tl_tu_unique[:, 1], tl_tu_unique[:, 2])
-#     logY_e_lat =
-#         exp.(-expert_tn_bar_pos) .*
-#         int_lat_logY_tmp[match_unique_bounds_threaded(hcat(vec(tl), vec(tu)), tl_tu_unique)]
-#     nan2num(logY_e_lat, 0.0) # get rid of NaN
-
-#     # Update parameters
-#     pos_idx = (yu .!= 0.0)
-#     term_zkz = z_e_obs[pos_idx] .+ (z_e_lat[pos_idx] .* k_e[pos_idx])
-#     term_zkz_Y =
-#         (z_e_obs[pos_idx] .* Y_e_obs[pos_idx]) .+
-#         (z_e_lat[pos_idx] .* k_e[pos_idx] .* Y_e_lat[pos_idx])
-#     term_zkz_logY =
-#         (z_e_obs[pos_idx] .* logY_e_obs[pos_idx]) .+
-#         (z_e_lat[pos_idx] .* k_e[pos_idx] .* logY_e_lat[pos_idx])
-
-#     logk_new = Optim.minimizer(
-#         Optim.optimize(
-#             x -> _gamma_optim_k(x, sum(term_zkz)[1], sum(term_zkz_Y)[1],
-#                 sum(term_zkz_logY)[1];
-#                 penalty=penalty, pen_params_jk=pen_params_jk),
-#             max(log(d.k) - 2.0, 0.0), log(d.k) + 2.0),
-#     ) # ,
-#     # log(d.k)-2.0, log(d.k)+2.0 )) # ,
-#     # GoldenSection() )) 
-#     # , rel_tol = 1e-8) )
-#     k_new = exp(logk_new)
-#     θ_new = _gamma_k_to_θ(
-#         k_new,
-#         sum(term_zkz)[1],
-#         sum(term_zkz_Y)[1];
-#         penalty=penalty,
-#         pen_params_jk=pen_params_jk,
-#     )
-
-#     # println("$k_new, $θ_new")
-#     return GammaExpert(k_new, θ_new)
-# end
 
 ## EM: M-Step, exact observations
 function EM_M_expert_exact(d::GammaExpert,
@@ -343,6 +199,7 @@ function EM_M_expert_exact(d::GammaExpert,
         pen_params_jk = pen_params_jk,
     )
 
+    θ_new = isnan(θ_new) ? 0.0 : θ_new
     θ_new = (maximum([1e-5, θ_new]))
 
     return GammaExpert(k_new, θ_new)

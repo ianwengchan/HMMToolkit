@@ -60,29 +60,6 @@ function expert_ll(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = (tu == 0.0) ? log.(p0) : expert_ll
     return expert_ll
 end
-# function expert_tn(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_pos = HMMToolkit.expert_tn(HMMToolkit.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
-#     # Deal with zero inflation
-#     p0 = p_zero(d)
-#     expert_tn = if (tl == 0.0)
-#         log.(p0 + (1 - p0) * exp.(expert_tn_pos))
-#     else
-#         log.(0.0 + (1 - p0) * exp.(expert_tn_pos))
-#     end
-#     expert_tn = (tu == 0.0) ? log.(p0) : expert_tn
-#     return expert_tn
-# end
-# function expert_tn_bar(d::ZILogNormalExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar_pos = HMMToolkit.expert_tn_bar(HMMToolkit.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
-#     # Deal with zero inflation
-#     p0 = p_zero(d)
-#     expert_tn_bar = if (tl > 0.0)
-#         log.(p0 + (1 - p0) * exp.(expert_tn_bar_pos))
-#     else
-#         log.(0.0 + (1 - p0) * exp.(expert_tn_bar_pos))
-#     end
-#     return expert_tn_bar
-# end
 
 exposurize_expert(d::ZILogNormalExpert; exposure=1) = d
 
@@ -95,7 +72,7 @@ function params_init(y, d::ZILogNormalExpert)
     pos_idx = (y .> 0.0)
     μ_init, σ_init = mean(log.(y[pos_idx])), sqrt(var(log.(y[pos_idx])))
     μ_init = isnan(μ_init) ? 0.0 : μ_init
-    σ_init = isnan(σ_init) ? 1.0 : σ_init
+    σ_init = isnan(σ_init) || (σ_init == 0) ? 1.0 : σ_init
     return ZILogNormalExpert(p_init, μ_init, σ_init)
 end
 
@@ -129,41 +106,7 @@ end
 function quantile(d::ZILogNormalExpert, p)
     return p <= d.p ? 0.0 : quantile(Distributions.LogNormal(d.μ, d.σ), p - d.p)
 end
-# lev(d::ZILogNormalExpert, u) = (1 - d.p) * lev(LogNormalExpert(d.μ, d.σ), u)
-# excess(d::ZILogNormalExpert, u) = mean(d) - lev(d, u)
 
-# # EM: M-Step
-# function EM_M_expert(d::ZILogNormalExpert,
-#     tl, yl, yu, tu,
-#     exposure,
-#     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_params_jk=[Inf 1.0 Inf])
-
-#     # Old parameters
-#     p_old = p_zero(d)
-
-#     # Update zero probability
-#     expert_ll_pos = expert_ll.(HMMToolkit.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
-#     expert_tn_bar_pos = expert_tn_bar.(HMMToolkit.LogNormalExpert(d.μ, d.σ), tl, yl, yu, tu)
-
-#     z_zero_e_obs = z_e_obs .* EM_E_z_zero_obs(yl, p_old, expert_ll_pos)
-#     z_pos_e_obs = z_e_obs .- z_zero_e_obs
-#     z_zero_e_lat = z_e_lat .* EM_E_z_zero_lat(tl, p_old, expert_tn_bar_pos)
-#     z_pos_e_lat = z_e_lat .- z_zero_e_lat
-#     p_new = EM_M_zero(z_zero_e_obs, z_pos_e_obs, z_zero_e_lat, z_pos_e_lat, k_e)
-
-#     p_new = max(0.0, min(1 - 1e-08, p_new))
-
-#     # Update parameters: call its positive part
-#     tmp_exp = LogNormalExpert(d.μ, d.σ)
-#     tmp_update = EM_M_expert(tmp_exp,
-#         tl, yl, yu, tu,
-#         exposure,
-#         z_pos_e_obs, z_pos_e_lat, k_e;
-#         penalty=penalty, pen_params_jk=pen_params_jk)
-
-#     return ZILogNormalExpert(p_new, tmp_update.μ, tmp_update.σ)
-# end
 
 ## EM: M-Step, exact observations
 function EM_M_expert_exact(d::ZILogNormalExpert,

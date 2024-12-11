@@ -74,29 +74,7 @@ function expert_ll(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
     expert_ll = (tu == 0.0) ? log.(p0) : expert_ll
     return expert_ll
 end
-# function expert_tn(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_pos = HMMToolkit.expert_tn(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
-#     # Deal with zero inflation
-#     p0 = p_zero(d)
-#     expert_tn = if (tl == 0.0)
-#         log.(p0 + (1 - p0) * exp.(expert_tn_pos))
-#     else
-#         log.(0.0 + (1 - p0) * exp.(expert_tn_pos))
-#     end
-#     expert_tn = (tu == 0.0) ? log.(p0) : expert_tn
-#     return expert_tn
-# end
-# function expert_tn_bar(d::ZIGammaExpert, tl::Real, yl::Real, yu::Real, tu::Real)
-#     expert_tn_bar_pos = HMMToolkit.expert_tn_bar(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
-#     # Deal with zero inflation
-#     p0 = p_zero(d)
-#     expert_tn_bar = if (tl > 0.0)
-#         log.(p0 + (1 - p0) * exp.(expert_tn_bar_pos))
-#     else
-#         log.(0.0 + (1 - p0) * exp.(expert_tn_bar_pos))
-#     end
-#     return expert_tn_bar
-# end
+
 
 exposurize_expert(d::ZIGammaExpert; exposure=1) = d
 
@@ -110,7 +88,7 @@ function params_init(y, d::ZIGammaExpert)
     μ, σ2 = mean(y[pos_idx]), var(y[pos_idx])
     θ_init = σ2 / μ
     k_init = μ / θ_init
-    if isnan(θ_init) || isnan(k_init)
+    if isnan(θ_init) || isnan(k_init) || isinf(k_init) || isinf(θ_init) || (θ_init == 0)
         return ZIGammaExpert()
     else
         return ZIGammaExpert(p_init, k_init, θ_init)
@@ -148,50 +126,7 @@ end
 function quantile(d::ZIGammaExpert, p)
     return p <= d.p ? 0.0 : quantile(Distributions.Gamma(d.k, d.θ), p - d.p)
 end
-# lev(d::ZIGammaExpert, u) = (1 - d.p) * lev(GammaExpert(d.k, d.θ), u)
-# excess(d::ZIGammaExpert, u) = mean(d) - lev(d, u)
 
-## EM: M-Step
-# function EM_M_expert(d::ZIGammaExpert,
-#     tl, yl, yu, tu,
-#     exposure,
-#     #  expert_ll_pos,
-#     #  expert_tn_pos,
-#     #  expert_tn_bar_pos,
-#     z_e_obs, z_e_lat, k_e;
-#     penalty=true, pen_params_jk=[1.0 Inf 1.0 Inf])
-
-#     # Old parameters
-#     p_old = p_zero(d)
-
-#     if p_old > 0.999999
-#         return d
-#     end
-
-#     # Update zero probability
-#     expert_ll_pos = expert_ll.(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
-#     expert_tn_bar_pos = expert_tn_bar.(HMMToolkit.GammaExpert(d.k, d.θ), tl, yl, yu, tu)
-
-#     z_zero_e_obs = z_e_obs .* EM_E_z_zero_obs(yl, p_old, expert_ll_pos)
-#     z_pos_e_obs = z_e_obs .- z_zero_e_obs
-#     z_zero_e_lat = z_e_lat .* EM_E_z_zero_lat(tl, p_old, expert_tn_bar_pos)
-#     z_pos_e_lat = z_e_lat .- z_zero_e_lat
-#     p_new = EM_M_zero(z_zero_e_obs, z_pos_e_obs, z_zero_e_lat, z_pos_e_lat, k_e)
-
-#     # Update parameters: call its positive part
-#     tmp_exp = GammaExpert(d.k, d.θ)
-#     tmp_update = EM_M_expert(tmp_exp,
-#         tl, yl, yu, tu,
-#         exposure,
-#         # expert_ll_pos,
-#         # expert_tn_pos,
-#         # expert_tn_bar_pos,
-#         # z_e_obs, z_e_lat, k_e,
-#         z_pos_e_obs, z_pos_e_lat, k_e;
-#         penalty=penalty, pen_params_jk=pen_params_jk)
-
-#     return ZIGammaExpert(p_new, tmp_update.k, tmp_update.θ)
-# end
 
 ## EM: M-Step, exact observations
 function EM_M_expert_exact(d::ZIGammaExpert,

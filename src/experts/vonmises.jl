@@ -128,7 +128,7 @@ function params_init(y, d::VonMisesExpert)
     # pos_idx = (y .> 0.0)  # VonMises distribution takes negative values as well
     μ_init, κ_init = mean(y), invA(1 - var(y))
     μ_init = isnan(μ_init) ? 0.0 : μ_init
-    κ_init = isnan(κ_init) ? 1.0 : κ_init
+    κ_init = isnan(κ_init) || (κ_init == 0) ? 1.0 : κ_init
     return VonMisesExpert(μ_init, κ_init)
 end
 
