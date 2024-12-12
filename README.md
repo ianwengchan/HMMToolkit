@@ -1,7 +1,7 @@
 # HMMToolkit
 
 The **HMMToolkit** is a Julia-based framework for fitting, analyzing, and performing unsupervised anomaly detection 
-using both discrete-time and continuous-time (multivariate) hidden Markov models (HMMs).  
+using both discrete-time and continuous-time (multivariate) hidden Markov models (HMMs).
 An application of the continuous-time HMM (CTHMM) for analyzing trip-level vehicle telematics data and 
 detecting anomalous driving patterns is detailed in [Chan et al. (2024)](https://arxiv.org/abs/2412.08106).
 
