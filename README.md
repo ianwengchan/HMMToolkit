@@ -1,22 +1,33 @@
 # HMMToolkit
 
-This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
-to make a reproducible scientific project named
-> HMMToolkit
+The **HMMToolkit** is a Julia-based framework for fitting, analyzing, and performing unsupervised anomaly detection 
+using both discrete-time and continuous-time (multivariate) hidden Markov models (HMMs).  
+An application of the continuous-time HMM (CTHMM) for analyzing trip-level vehicle telematics data and 
+detecting anomalous driving patterns is detailed in [Chan et al. (2024)](https://arxiv.org/abs/2412.08106).
 
-It is authored by Sophia Chan.
+This project leverages [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/) to ensure reproducibility and is authored by [Sophia Chan](https://ianwengchan.github.io/).
 
-To (locally) reproduce this project, do the following:
 
-0. Download this code base. Notice that raw data are typically not included in the
-   git-history and may need to be downloaded independently.
-1. Open a Julia console and do:
+## Getting Started  
+
+To reproduce this project locally, follow these steps:  
+
+1. **Download the Code Base**  
+   Note: Raw data is typically not included in the git history and may need to be downloaded separately.  
+
+2. **Set Up the Julia Environment**  
+   Open a Julia console and run the following commands:  
+   ```julia  
+   julia> using Pkg  
+   julia> Pkg.add("DrWatson") # Install globally for using `quickactivate`  
+   julia> Pkg.activate("path/to/this/project")  
+   julia> Pkg.instantiate()  
    ```
-   julia> using Pkg
-   julia> Pkg.add("DrWatson") # install globally, for using `quickactivate`
-   julia> Pkg.activate("path/to/this/project")
-   julia> Pkg.instantiate()
-   ```
 
-This will install all necessary packages for you to be able to run the scripts and
-everything should work out of the box, including correctly finding local paths.
+These commands will install all necessary packages and ensure the environment is correctly configured.  The scripts should work out of the box, including resolving local paths.
+
+
+## Example Usage
+
+For a practical example of using the HMMToolkit to fit CTHMM and perform anomaly detection, 
+refer to the Jupyter Notebook `UAH-example.ipynb`, located in the `notebooks` directory.
