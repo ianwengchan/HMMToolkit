@@ -45,7 +45,7 @@ Broadcast.broadcastable(d::NonZIContinuousExpert) = Ref(d)
 # ]
 
 const discrete_experts = [
-    "categorical"
+    # "categorical"
 ]
 
 const continuous_experts = [

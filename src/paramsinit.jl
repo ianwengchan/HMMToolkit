@@ -267,7 +267,7 @@ Initialize a CTHMM model using the Clustered Method of Moments (CMM).
 
 function CTHMM_cmm_init(Y, num_state, type; block_size = nothing, n_random = 5)
 
-    tmp = cmm_init_exact(Y, num_state, type; block_size = block_size)
+    tmp = CTHMM_cmm_init_exact(Y, num_state, type; block_size = block_size)
 
     if n_random >= 1
         random_init = [_sample_random_init(tmp.params_init) for i in 1:n_random]

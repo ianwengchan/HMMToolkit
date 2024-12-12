@@ -433,3 +433,39 @@ function DTHMM_batch_pseudo_residuals(uniform, df, response_list, P_mat, π_list
     return (ordinary_list = ordinary_list, forecast_list = forecast_list)
     
 end
+
+
+
+
+"""
+    DTHMM_batch_anomaly_indices(df, response_list, P_mat, π_list, state_list;
+        keep_last = 1, ZI_list = nothing, group_by_col = nothing)
+
+Computes the anomaly indices of (multiple) time series in batches given a fitted DTHMM.
+
+# Arguments
+- `df`: Dataframe of (multiple) time series.
+- `response_list`: List of responses to consider.
+- `P_mat`: Fitted transition probability matrix.
+- `π_list`: Fitted initial state probabilities.
+- `state_list`: Fitted state dependent distributions.
+
+# Optional Arguments
+- `keep_list`: 1 (default) if last observation is kept, removed otherwise.
+- `ZI_list`: A list of zero-inflated responses. Default to nothing.
+
+# Return Values
+- A g-by-(num_dim) array storing the anomaly indices of the g time series, for each of the (num_dim) response dimensions.
+"""
+
+function DTHMM_batch_anomaly_indices(df, response_list, P_mat, π_list, state_list; keep_last = 1, ZI_list = nothing, group_by_col = nothing)
+
+    # uniform = 0 for normal pseudo-residuals
+    ordinary_list, forecast_list = DTHMM_batch_pseudo_residuals(0, df, response_list, P_mat, π_list, state_list; 
+                                                                    keep_last = keep_last, ZI_list = ZI_list, group_by_col = group_by_col)
+    
+    anomaly_indices = CTHMM_anomaly_indices(forecast_list)
+
+    return anomaly_indices
+
+end

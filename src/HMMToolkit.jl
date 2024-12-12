@@ -118,6 +118,8 @@ export
     CTHMM_forecast_pseudo_residuals,
     CTHMM_pseudo_residuals,
     CTHMM_batch_pseudo_residuals,
+    CTHMM_anomaly_indices,
+    CTHMM_batch_anomaly_indices,
 
     ##### DTHMM
     # init
@@ -140,7 +142,8 @@ export
     # analysis
     DTHMM_ordinary_pseudo_residuals,
     DTHMM_forecast_pseudo_residuals,
-    DTHMM_batch_pseudo_residuals
+    DTHMM_batch_pseudo_residuals,
+    DTHMM_batch_anomaly_indices
 
 
 ### source files

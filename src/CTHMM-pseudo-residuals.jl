@@ -2,7 +2,7 @@
     CTHMM_ordinary_pseudo_residuals(uniform, seq_df, response_list, data_emiss_prob_list_total, data_emiss_cdf_list_separate, Q_mat, π_list;
         keep_last = 1, ZI_list = nothing)
 
-Computes the uniform or normal ordinary pseudo residuals of a single time series given a fitted HMMToolkit.
+Computes the uniform or normal ordinary pseudo residuals of a single time series given a fitted CTHMM.
 
 # Arguments
 - `uniform`: 1 for uniform ordinary pseudo residuals, normal otherwise.
@@ -145,7 +145,7 @@ end
     CTHMM_forecast_pseudo_residuals(uniform, seq_df, response_list, data_emiss_prob_list_total, data_emiss_cdf_list_separate, Q_mat, π_list;
         keep_last = 1, ZI_list = nothing)
 
-Computes the uniform or normal forecast pseudo residuals of a single time series given a fitted HMMToolkit.
+Computes the uniform or normal forecast pseudo residuals of a single time series given a fitted CTHMM.
 
 # Arguments
 - `uniform`: 1 for uniform ordinary pseudo residuals, normal otherwise.
@@ -260,7 +260,7 @@ end
     CTHMM_pseudo_residuals(uniform, seq_df, response_list, data_emiss_prob_list_total, data_emiss_cdf_list_separate, Q_mat, π_list;
         keep_last = 1, ZI_list = nothing)
 
-Computes both the uniform or normal ordinary and forecast pseudo residuals of a single time series given a fitted HMMToolkit.
+Computes both the uniform or normal ordinary and forecast pseudo residuals of a single time series given a fitted CTHMM.
 
 # Arguments
 - `uniform`: 1 for uniform ordinary pseudo residuals, normal otherwise.
@@ -418,7 +418,7 @@ end
     CTHMM_batch_pseudo_residuals(uniform, df, response_list, Q_mat, π_list, state_list;
         keep_last = 1, ZI_list = nothing, group_by_col = nothing)
 
-Computes both the uniform or normal ordinary and forecast pseudo residuals of (multiple) time series in batches given a fitted HMMToolkit.
+Computes both the uniform or normal ordinary and forecast pseudo residuals of (multiple) time series in batches given a fitted CTHMM.
 
 # Arguments
 - `uniform`: 1 for uniform ordinary pseudo residuals, normal otherwise.
@@ -480,4 +480,76 @@ function CTHMM_batch_pseudo_residuals(uniform, df, response_list, Q_mat, π_list
 
     return (ordinary_list = ordinary_list, forecast_list = forecast_list)
     
+end
+
+
+
+
+"""
+    CTHMM_anomaly_indices(forecast_list)
+
+Computes the anomaly indices given a list of normal forecast pseudo-residuals.
+
+# Arguments
+- `forecast_list`: A list of g normal forecast pseudo-residual array for g time series; returned by `CTHMM_batch_pseudo_residuals` function (2nd arg).
+
+# Return Values
+A g-by-(num_dim) array storing the anomaly indices of the g time series, for each of the (num_dim) response dimensions.
+"""
+
+function CTHMM_anomaly_indices(forecast_list)
+    
+    num_time_series = length(forecast_list)
+    num_dim = size(forecast_list[1])[2]
+
+    anomaly_indices = Array{Float64}(undef, num_time_series, num_dim)
+
+    @threads for j in 1:num_time_series
+
+        forecast = forecast_list[j]
+        forecast[isnan.(forecast)] .= -10
+        forecast[forecast .== Inf] .= 10
+
+        anomaly_indices[j, :] = [mean(abs.(forecast[:, d]) .>= 3) for d in 1:num_dim]
+
+    end
+
+    return anomaly_indices
+    
+end
+
+
+
+
+"""
+    CTHMM_batch_anomaly_indices(df, response_list, Q_mat, π_list, state_list;
+        keep_last = 1, ZI_list = nothing, group_by_col = nothing)
+
+Computes the anomaly indices of (multiple) time series in batches given a fitted CTHMM.
+
+# Arguments
+- `df`: Dataframe of (multiple) time series.
+- `response_list`: List of responses to consider.
+- `Q_mat`: Fitted transition rate matrix.
+- `π_list`: Fitted initial state probabilities.
+- `state_list`: Fitted state dependent distributions.
+
+# Optional Arguments
+- `keep_list`: 1 (default) if last observation is kept, removed otherwise.
+- `ZI_list`: A list of zero-inflated responses. Default to nothing.
+
+# Return Values
+- A g-by-(num_dim) array storing the anomaly indices of the g time series, for each of the (num_dim) response dimensions.
+"""
+
+function CTHMM_batch_anomaly_indices(df, response_list, Q_mat, π_list, state_list; keep_last = 1, ZI_list = nothing, group_by_col = nothing)
+
+    # uniform = 0 for normal pseudo-residuals
+    ordinary_list, forecast_list = CTHMM_batch_pseudo_residuals(0, df, response_list, Q_mat, π_list, state_list; 
+                                                                    keep_last = keep_last, ZI_list = ZI_list, group_by_col = group_by_col)
+    
+    anomaly_indices = CTHMM_anomaly_indices(forecast_list)
+
+    return anomaly_indices
+
 end
