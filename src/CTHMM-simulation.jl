@@ -68,11 +68,11 @@ function CTHMM_sim_dataset(Q_mat, π_list, state_list, num_time_series)
     distinct_time_list = collect(1:1:30)
     distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
 
-    df_sim = sim_time_series(1, distinct_time_Pt_list, π_list, state_list)
+    df_sim = CTHMM_sim_time_series(1, distinct_time_Pt_list, π_list, state_list)
 
     for g = 2:num_time_series
 
-        dff = sim_time_series(g, distinct_time_Pt_list, π_list, state_list)
+        dff = CTHMM_sim_time_series(g, distinct_time_Pt_list, π_list, state_list)
         df_sim = vcat(df_sim, dff)
     
     end
