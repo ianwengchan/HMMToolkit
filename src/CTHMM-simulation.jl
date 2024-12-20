@@ -63,7 +63,7 @@ A dataframe of mutliple irregular time series, identified by `ID`,
     each with number of observations between 30 to 150, and irregular time intervals between 1 to 30.
 """
 
-function sim_dataset(Q_mat, π_list, state_list, num_time_series)
+function CTHMM_sim_dataset(Q_mat, π_list, state_list, num_time_series)
 
     distinct_time_list = collect(1:1:30)
     distinct_time_Pt_list = CTHMM_precompute_distinct_time_Pt_list(distinct_time_list, Q_mat)
