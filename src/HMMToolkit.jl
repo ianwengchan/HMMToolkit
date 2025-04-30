@@ -145,7 +145,6 @@ export
     DTHMM_batch_pseudo_residuals,
     DTHMM_batch_anomaly_indices
 
-
 ### source files
 
 include("utils.jl")
