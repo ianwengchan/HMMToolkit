@@ -81,6 +81,7 @@ export
     ## experts
     params,
     p_zero,
+    lower_cdf,
     params_init,
     GammaExpert, ZIGammaExpert,
     LogNormalExpert, ZILogNormalExpert,
@@ -94,6 +95,7 @@ export
     CTHMM_precompute_batch_data_emission_prob,
     CTHMM_precompute_batch_data_emission_prob_separate,
     CTHMM_precompute_batch_data_emission_cdf_separate,
+    CTHMM_precompute_batch_data_emission_cdf_lower_separate,
     # decode
     CTHMM_decode_forward_backward,
     CTHMM_likelihood_forward,
