@@ -235,3 +235,82 @@ function CTHMM_precompute_batch_data_emission_cdf_separate(df, response_list, st
     return obs_seq_emiss_list
 
 end
+
+
+
+"""
+    CTHMM_precompute_batch_data_emission_cdf_lower_separate(df, response_list, state_list; group_by_col = nothing)
+
+Computes the data emission lower cdf F(y^-) separately (for randomized PIT pseudo-residuals) in batches,
+given dataframe `df`,
+list of responses `response_list`,
+list of state dependent distributions `state_list`;
+with the option to be grouped by a list of columns in the dataframe `group_by_col`.
+
+The lower CDF is inferred directly from the expert type:
+- non-zero-inflated continuous experts -> continuous
+- zero-inflated continuous experts -> semi-continuous
+- discrete experts -> discrete
+
+# Arguments
+- `df`: Dataframe of (multiple) time series, identified by "ID".
+- `response_list`: List of responses to compute the data emission lower cdf.
+- `state_list`: List of state dependent distributions corresponding to `response_list`.
+
+# Optional Arguments
+- `group_by_col`: List of columns to group the dataframe; if nothing is provided, group by "ID" by default.
+
+# Return Values
+- An array of g list of data emission lower cdf for g time series;
+    for each time series, returns (num_dim) matrices, each of (len_time_series)-by-(num_state),
+    being data_emiss_cdf_lower_list for each dimension separately, respectively.
+"""
+
+function CTHMM_precompute_batch_data_emission_cdf_lower_separate(df, response_list, state_list; group_by_col = nothing)
+
+    ## data emission lower cdf F(y^-); for randomized PIT pseudo-residuals
+    if isnothing(group_by_col)
+        group_df = groupby(df, :ID)
+    else
+        group_df = groupby(df, group_by_col)
+    end
+
+    num_time_series = size(group_df, 1)
+    num_state = size(state_list, 2) # follow the expert distribution list format of LRMoE
+    num_dim = size(state_list, 1)
+
+    obs_seq_emiss_list = Array{Array{Matrix{Float64}}}(undef, num_time_series)
+
+    GC.safepoint()
+
+    @threads for g = 1:num_time_series   # number of time series to consider, e.g. trips
+
+        len_time_series = nrow(group_df[g])
+
+        obs_seq_emiss_list[g] = Array{Matrix{Float64}}(undef, num_dim)
+
+        ## compute emission lower cdf SEPARATELY for each dimension of observations for each state
+        ## assume each dimension of observations are independent conditioned on the state
+        data = select(group_df[g], response_list)
+
+        for d = 1:num_dim
+            obs_seq_emiss_list[g][d] = zeros(len_time_series, num_state)  # data_emiss_cdf_lower_list
+
+            for s = 1:num_state
+                temp = 1.0
+                temp = temp .* map(x -> ismissing(x) ? 1 : max(1e-99, HMMToolkit.lower_cdf(state_list[d, s], x)), data[:, d])
+
+                obs_seq_emiss_list[g][d][:, s] = temp
+            end
+
+            GC.safepoint()
+        end
+
+        GC.safepoint()
+    end
+
+    GC.safepoint()
+
+    return obs_seq_emiss_list
+
+end

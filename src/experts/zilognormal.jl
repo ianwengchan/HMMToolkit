@@ -37,12 +37,18 @@ function pdf(d::ZILogNormalExpert, x...)
     return Distributions.pdf.(Distributions.LogNormal(d.μ, d.σ), x...)
 end
 function logcdf(d::ZILogNormalExpert, x...)
-    # return Distributions.logcdf.(Distributions.LogNormal(d.μ, d.σ), x...)
-    return log(d.p + (1 - d.p) * Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...))
+    return if (x... < 0.0)
+        -Inf
+    else
+        logsumexp((log(d.p), log1p(-d.p) + Distributions.logcdf.(Distributions.LogNormal(d.μ, d.σ), x...)))
+    end
 end
 function cdf(d::ZILogNormalExpert, x...)
-    # return Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
-    return d.p + (1 - d.p) * Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    return if (x... < 0.0)
+        0.0
+    else
+        d.p + (1 - d.p) * Distributions.cdf.(Distributions.LogNormal(d.μ, d.σ), x...)
+    end
 end
 
 function expert_ll_exact(d::ZILogNormalExpert, x::Real)

@@ -67,3 +67,24 @@ end
 for dname in continuous_experts
     include(joinpath("experts", "$(dname).jl"))
 end
+
+
+##### lower CDF for randomized PIT #####
+
+function lower_cdf(expert::AnyExpert{<:Any, NonZI, <:ContinuousUnivariateDistribution}, x)
+    return HMMToolkit.cdf(expert, x)
+end
+
+function lower_cdf(expert::AnyExpert{<:Any, ZI, <:ContinuousUnivariateDistribution}, x)
+    if x == 0
+        return 0.0
+    else
+        return HMMToolkit.cdf(expert, x)
+    end
+end
+
+function lower_cdf(expert::AnyExpert{<:Any, <:Any, <:DiscreteUnivariateDistribution}, x)
+    cdf_x = HMMToolkit.cdf(expert, x)
+    pmf_x = HMMToolkit.pdf(expert, x)
+    return max(0.0, cdf_x - pmf_x)
+end

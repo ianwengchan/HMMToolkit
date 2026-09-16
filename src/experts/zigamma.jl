@@ -42,18 +42,16 @@ function pdf(d::ZIGammaExpert, x...)
     end
 end
 function logcdf(d::ZIGammaExpert, x...)
-    return if (d.k < 1 && x... <= 0.0)
+    return if (x... < 0.0)
         -Inf
     else
-        # Distributions.logcdf.(Distributions.Gamma(d.k, d.θ), x...)
-        log(d.p + (1 - d.p) * Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...))
+        logsumexp((log(d.p), log1p(-d.p) + Distributions.logcdf.(Distributions.Gamma(d.k, d.θ), x...)))
     end
 end
 function cdf(d::ZIGammaExpert, x...)
-    return if (d.k < 1 && x... <= 0.0)
+    return if (x... < 0.0)
         0.0
     else
-        # Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...)
         d.p + (1 - d.p) * Distributions.cdf.(Distributions.Gamma(d.k, d.θ), x...)
     end
 end
