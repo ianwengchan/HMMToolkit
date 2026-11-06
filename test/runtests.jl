@@ -1,3 +1,4 @@
+ENV["HMMTOOLKIT_SKIP_PLOTS"] = get(ENV, "HMMTOOLKIT_SKIP_PLOTS", "true")
 using Test, Random, Statistics, LinearAlgebra, Distributions, DataFrames
 
 if !isdefined(Main, :HMMToolkit)
@@ -143,3 +144,5 @@ end
     # The prior DTHMM batch interface exposed an unused epsilon keyword.
     @test length(DTHMM_batch_pseudo_residuals(1, df, responses, p, initial, states; ϵ=0).ordinary_list) == 1
 end
+
+include("anomalous-intervals.jl")

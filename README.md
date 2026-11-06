@@ -1,5 +1,14 @@
 # HMMToolkit
 
+Requires Julia 1.10 or later. The default manifest targets Julia 1.10 LTS;
+Julia 1.13 automatically uses `Manifest-v1.13.toml`.
+
+Anomalous interval detection from HMM forecast pseudo-residuals is documented in
+[docs/anomalous-intervals.md](docs/anomalous-intervals.md), with a standalone
+[synthetic example](examples/anomalous-intervals.jl). The implementation includes
+general lag embeddings, model-based whole-search calibration, and optimal
+selection of non-overlapping intervals.
+
 The **HMMToolkit** is a Julia-based framework for fitting, analyzing, and performing unsupervised anomaly detection 
 using both discrete-time and continuous-time (multivariate) hidden Markov models (HMMs).
 An application of the continuous-time HMM (CTHMM) for analyzing trip-level vehicle telematics data and 

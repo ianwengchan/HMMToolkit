@@ -68,11 +68,25 @@ using HypothesisTests
 
 using ShiftedArrays
 
-using StatsPlots
+if get(ENV, "HMMTOOLKIT_SKIP_PLOTS", "false") != "true"
+    using StatsPlots
+end
 
 using Distances, DynamicAxisWarping
 
 export
+    HMMIntervalReference,
+    HMMIntervalDesign,
+    HMMIntervalCalibration,
+    HMM_lag_embed,
+    HMM_interval_residuals,
+    HMM_interval_reference,
+    HMM_interval_score,
+    HMM_scan_intervals,
+    HMM_interval_penalty,
+    HMM_calibrate_interval_penalty,
+    HMM_select_intervals,
+    HMM_detect_intervals,
     ##### CTHMM
     ## init
     cluster_responses,
@@ -178,6 +192,10 @@ include("DTHMM-learn-P.jl") #commented
 include("DTHMM-learn-EM.jl") #commented
 include("DTHMM-simulation.jl") #commented
 include("DTHMM-pseudo-residuals.jl") #commented
+
+# Model-generated residual reference and anomalous interval detection
+include("HMM-anomalous-intervals.jl")
+include("HMM-interval-calibration.jl")
 
 # include("experts/ll/expert_ll_pos.jl")
 
